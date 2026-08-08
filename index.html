@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ノリカエ</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --border: #dde1e6;
+    --text: #262b33;
+    --muted: #6b7480;
+    --accent: #3a6ea5;
+    --accent-dark: #284d78;
+    --danger: #b3475a;
+    --warn: #c68a2e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 20px; font-size: 0.9rem; }
+  .layout { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 1100px; margin: 0 auto; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .panel h2 { font-size: 1rem; margin: 0 0 12px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input[type=text], input[type=date], input[type=number], select, textarea, button {
+    font: inherit;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+  }
+  textarea { resize: vertical; font-family: inherit; }
+  button { cursor: pointer; background: var(--accent); color: #fff; border: none; }
+  button:hover { background: var(--accent-dark); }
+  .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0; }
+  .hint.sync-error { color: var(--danger); }
+
+  #companyInput { flex: 1; min-width: 200px; }
+
+  /* ---------- 次のアクション ---------- */
+  .na-list { display: flex; flex-direction: column; gap: 8px; }
+  .na-item {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+    padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
+  }
+  .na-item.urgency-overdue { background: #fbe9ec; border-color: var(--danger); }
+  .na-item.urgency-soon { background: #fbf1de; border-color: var(--warn); }
+  .na-main { display: flex; align-items: center; gap: 8px; flex: 1 1 160px; min-width: 0; }
+  .na-company { font-weight: 700; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .na-stage-badge { font-size: 0.68rem; color: #fff; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .na-action { font-size: 0.82rem; color: var(--text); flex: 2 1 220px; }
+  .na-deadline { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .urgency-overdue .na-deadline { color: var(--danger); font-weight: 700; }
+  .urgency-soon .na-deadline { color: var(--warn); font-weight: 700; }
+  .na-empty { color: var(--muted); text-align: center; padding: 20px 0; font-size: 0.9rem; }
+
+  /* ---------- 選考ボード(路線図風カンバン) ---------- */
+  .board-columns { display: flex; gap: 0; overflow-x: auto; padding: 8px 2px 4px; }
+  .board-col { flex: 1 0 210px; min-width: 210px; padding: 0 10px; }
+  .station-head {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding-bottom: 14px; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .rail-line { position: absolute; top: 9px; left: 0; right: 0; height: 4px; background: var(--line-color); z-index: 0; }
+  .board-col:first-child .rail-line { left: 50%; }
+  .board-col:last-child .rail-line { right: 50%; }
+  .station-dot {
+    position: relative; z-index: 1; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--line-color); border: 3px solid var(--panel); box-shadow: 0 0 0 2px var(--line-color);
+  }
+  .station-name { position: relative; z-index: 1; font-size: 0.84rem; font-weight: 700; }
+  .station-count { position: relative; z-index: 1; font-size: 0.7rem; color: var(--muted); }
+  .col-cards { display: flex; flex-direction: column; gap: 10px; min-height: 30px; }
+  .col-empty { color: var(--muted); font-size: 0.78rem; text-align: center; padding: 14px 0; }
+
+  .job-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .job-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .job-company { font-weight: 700; font-size: 0.92rem; }
+  .job-stage-badge { display: none; font-size: 0.68rem; color: #fff; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .job-desire { font-size: 0.78rem; color: var(--accent-dark); white-space: nowrap; letter-spacing: 1px; }
+  .job-card-sub { display: flex; gap: 8px; margin-top: 6px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
+  .industry-tag { background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .expand-btn { display: block; background: none; border: none; color: var(--accent); font-size: 0.76rem; padding: 6px 0 0; cursor: pointer; }
+  .expand-btn:hover { text-decoration: underline; }
+
+  .job-detail { margin-top: 8px; padding-top: 10px; border-top: 1px dashed var(--border); flex-direction: column; gap: 10px; }
+  .job-detail label { display: flex; flex-direction: column; gap: 3px; font-size: 0.78rem; color: var(--muted); }
+  .job-detail input, .job-detail select, .job-detail textarea { width: 100%; }
+  .job-url-link { align-self: flex-start; font-size: 0.78rem; color: var(--accent); }
+  .research-links { display: flex; flex-direction: column; gap: 4px; }
+  .research-links a {
+    font-size: 0.76rem; color: var(--accent); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; background: var(--panel);
+  }
+  .research-links a:hover { background: var(--bg); }
+  .delete-job-btn { align-self: flex-start; background: none; border: none; color: var(--muted); font-size: 0.76rem; cursor: pointer; padding: 2px 0; }
+  .delete-job-btn:hover { color: var(--danger); }
+
+  @media (max-width: 600px) {
+    body { padding: 14px; }
+    .board-columns { flex-direction: column; overflow-x: visible; gap: 18px; padding: 4px 0; }
+    .board-col { min-width: 0; border-left: 4px solid var(--line-color); padding: 0 0 0 12px; }
+    .rail-line, .station-dot { display: none; }
+    .station-head { flex-direction: row; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 6px; margin-bottom: 8px; }
+    .job-card-sub { display: none; }
+    .job-stage-badge { display: inline-block; }
+    button, .expand-btn, .research-links a { min-height: 40px; }
+    .research-links a { display: flex; align-items: center; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div>
+    <h1>ノリカエ</h1>
+    <p class="subtitle">転職活動の進捗を、駅を辿るように管理する。</p>
+    <p class="hint" id="syncStatus"></p>
+  </div>
+
+  <div class="panel">
+    <h2>次のアクション</h2>
+    <div class="na-list" id="nextActionsList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>選考ボード</h2>
+    <div class="row" style="margin-bottom: 14px;">
+      <input type="text" id="companyInput" placeholder="企業名を入力してEnter">
+      <button id="addJobBtn">追加</button>
+    </div>
+    <div class="board-columns" id="boardColumns"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STAGE_META = [
+    { name: "気になる", color: "#9aa1ad" },
+    { name: "応募済", color: "#4f7cb0" },
+    { name: "書類通過", color: "#4f97b0" },
+    { name: "一次", color: "#4fab97" },
+    { name: "二次", color: "#5fab6a" },
+    { name: "最終", color: "#9aab4f" },
+    { name: "内定", color: "#c99a3f" },
+    { name: "見送り", color: "#8f8f8f" }
+  ];
+  var STAGE_OPTIONS = STAGE_META.map(function (s) { return s.name; });
+  var INDUSTRY_OPTIONS = ["製造", "建設", "不動産", "IT", "その他"];
+
+  function stageColor(name) {
+    var meta = STAGE_META.filter(function (s) { return s.name === name; })[0];
+    return meta ? meta.color : "#9aa1ad";
+  }
+
+  var state = { jobs: [] };
+  var nextId = 1;
+
+  function createJob(name) {
+    return {
+      id: "temp-" + (nextId++),
+      notionId: null,
+      company: name,
+      role: "",
+      stage: STAGE_OPTIONS[0],
+      industry: "",
+      appliedDate: "",
+      nextAction: "",
+      deadline: "",
+      jobUrl: "",
+      salaryRange: "",
+      location: "",
+      desire: 3,
+      memo: "",
+      expanded: false
+    };
+  }
+
+  // ---------- Notion bridge shim ----------
+  // window.claude.mcp が存在しない環境(GitHub Pages上の通常のページとして
+  // 開かれた場合)でのみ、Cloudflare Worker(notion-bridge)経由でNotion側の
+  // データを読み書きする互換シムを定義する。window.claude.mcp.callTool(server,
+  // tool, input) と同じ形を再現し、アプリ本体のコードからは区別なく呼べるようにする。
+  if (!(window.claude && window.claude.mcp)) {
+    (function () {
+      var BRIDGE_BASE = "https://notion-bridge.rattuti.workers.dev";
+      var APP_KEY_STORAGE = "notion_bridge_key";
+      var NOTION_DATA_SOURCE_ID_LOCAL = "e371bbf6-6920-4a28-a7d7-57334f5ce084";
+      var VIEW_TO_DATA_SOURCE = {};
+      VIEW_TO_DATA_SOURCE["view://" + NOTION_DATA_SOURCE_ID_LOCAL] = NOTION_DATA_SOURCE_ID_LOCAL;
+
+      // notion-query-database-view/notion-create-pagesで取得・作成した各ページIDが
+      // どのデータソース(DB)に属するかを控えておく。notion-update-pageはpage_idしか
+      // 受け取らないため、更新時にこの対応表からdataSourceIdを引く。
+      // Workerが返すIDはハイフン付きだが、アプリ側はextractPageId()でハイフンなしの
+      // 32桁hexに変換した値をnotionIdとして保持するため、キーは常にハイフンを
+      // 除去して正規化してから読み書きする。
+      var pageDataSourceMap = {};
+      function normalizeId(id) {
+        return (id || "").replace(/-/g, "");
+      }
+
+      function getAppKey() {
+        var key = localStorage.getItem(APP_KEY_STORAGE);
+        if (!key) {
+          key = window.prompt("Notion連携用のアプリキーを入力してください");
+          if (key) localStorage.setItem(APP_KEY_STORAGE, key);
+        }
+        return key;
+      }
+
+      function bridgeFetch(path, body) {
+        var key = getAppKey();
+        return fetch(BRIDGE_BASE + path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-App-Key": key || "" },
+          body: JSON.stringify(body)
+        }).then(function (res) {
+          if (res.status === 401) {
+            localStorage.removeItem(APP_KEY_STORAGE);
+            return Promise.reject({ code: "unauthorized", message: "アプリキーが正しくありません" });
+          }
+          if (!res.ok) {
+            return Promise.reject({ code: "http_" + res.status, message: "Notion連携サーバーへの通信に失敗しました" });
+          }
+          return res.json();
+        });
+      }
+
+      // bridgeFetchはWorkerの生レスポンス({results,...}や{pages:[...]}等)を
+      // そのまま返す。window.claude.mcp.callToolの実際の戻り値は{payload: ...}
+      // で包まれた形のため、ここで同じ形に包み直してからアプリ本体に返す。
+      function callTool(server, tool, input) {
+        if (tool === "notion-query-database-view") {
+          var queryDataSourceId = VIEW_TO_DATA_SOURCE[input.view_url];
+          var queryBody = { dataSourceId: queryDataSourceId, page_size: input.page_size };
+          if (input.start_cursor) queryBody.start_cursor = input.start_cursor;
+          return bridgeFetch("/query", queryBody).then(function (raw) {
+            var results = raw.results || [];
+            results.forEach(function (row) {
+              if (row && row.id) pageDataSourceMap[normalizeId(row.id)] = queryDataSourceId;
+            });
+            return { payload: raw };
+          });
+        }
+        if (tool === "notion-create-pages") {
+          var createDataSourceId = input.parent && input.parent.data_source_id;
+          var page = input.pages && input.pages[0];
+          return bridgeFetch("/create", {
+            dataSourceId: createDataSourceId,
+            properties: page && page.properties
+          }).then(function (raw) {
+            var created = raw.pages && raw.pages[0];
+            if (created && created.id) pageDataSourceMap[normalizeId(created.id)] = createDataSourceId;
+            return { payload: raw };
+          });
+        }
+        if (tool === "notion-update-page") {
+          return bridgeFetch("/update", {
+            pageId: input.page_id,
+            dataSourceId: pageDataSourceMap[normalizeId(input.page_id)],
+            properties: input.properties
+          }).then(function (raw) {
+            return { payload: raw };
+          });
+        }
+        return Promise.reject({ code: "unsupported_tool", message: "未対応のツールです: " + tool });
+      }
+
+      window.claude = window.claude || {};
+      window.claude.mcp = { callTool: callTool };
+    })();
+  }
+
+  var NOTION_ENABLED = !!(window.claude && window.claude.mcp);
+  var NOTION_SERVER = "Notion";
+  var NOTION_DATA_SOURCE_ID = "e371bbf6-6920-4a28-a7d7-57334f5ce084";
+  var NOTION_VIEW_URL = "view://" + NOTION_DATA_SOURCE_ID;
+
+  function extractPageId(url) {
+    var m = /([0-9a-f]{32})(?:\?.*)?$/i.exec(url || "");
+    return m ? m[1] : null;
+  }
+
+  // ソフト削除された行(「削除済み」=__YES__)を除外する。ビューモードでの
+  // クエリは削除フラグでの絞り込みができないため、クライアント側で行う。
+  function filterActiveRows(rows) {
+    return rows.filter(function (row) { return row["削除済み"] !== "__YES__"; });
+  }
+
+  function jobToNotionProps(job) {
+    var props = {
+      "企業名": job.company,
+      "職種": job.role || "",
+      "ステージ": job.stage || STAGE_OPTIONS[0],
+      "業界": job.industry || "",
+      "次のアクション": job.nextAction || "",
+      "求人URL": job.jobUrl || "",
+      "年収レンジ": job.salaryRange || "",
+      "勤務地": job.location || "",
+      "志望度": job.desire || 3,
+      "メモ": job.memo || "",
+      "削除済み": "__NO__"
+    };
+    if (job.appliedDate) props["date:応募日:start"] = job.appliedDate;
+    if (job.deadline) props["date:期限:start"] = job.deadline;
+    return props;
+  }
+
+  function notionRowToJob(row) {
+    var pageId = extractPageId(row.url);
+    return {
+      id: pageId,
+      notionId: pageId,
+      company: row["企業名"] || "",
+      role: row["職種"] || "",
+      stage: row["ステージ"] || STAGE_OPTIONS[0],
+      industry: row["業界"] || "",
+      appliedDate: row["date:応募日:start"] || "",
+      nextAction: row["次のアクション"] || "",
+      deadline: row["date:期限:start"] || "",
+      jobUrl: row["求人URL"] || "",
+      salaryRange: row["年収レンジ"] || "",
+      location: row["勤務地"] || "",
+      desire: typeof row["志望度"] === "number" ? row["志望度"] : 3,
+      memo: row["メモ"] || "",
+      expanded: false
+    };
+  }
+
+  function setSyncStatus(text, isError) {
+    var el = document.getElementById("syncStatus");
+    el.textContent = text;
+    el.className = "hint" + (isError ? " sync-error" : "");
+  }
+
+  // notion-query-data-sources (SQL mode) has an hourly quota on Free/Plus
+  // Notion plans and fails with a non-retryable "entitlement_required"
+  // tool_error once exhausted. notion-query-database-view (view mode) reads
+  // the same rows without that quota, so reads go through it instead; the
+  // "削除済み" soft-delete filter is applied client-side.
+  function queryAllViewRows(viewUrl) {
+    function fetchPage(cursor) {
+      var input = { view_url: viewUrl, page_size: 100 };
+      if (cursor) input.start_cursor = cursor;
+      return window.claude.mcp.callTool(NOTION_SERVER, "notion-query-database-view", input).then(function (res) {
+        var payload = res.payload || {};
+        var rows = payload.results || [];
+        if (payload.has_more && payload.next_cursor) {
+          return fetchPage(payload.next_cursor).then(function (rest) { return rows.concat(rest); });
+        }
+        return rows;
+      });
+    }
+    return fetchPage(null);
+  }
+
+  function notionLoadJobs() {
+    return queryAllViewRows(NOTION_VIEW_URL).then(function (rows) {
+      return filterActiveRows(rows).map(notionRowToJob);
+    });
+  }
+
+  function notionCreatePage(dataSourceId, properties) {
+    return window.claude.mcp.callTool(NOTION_SERVER, "notion-create-pages", {
+      parent: { type: "data_source_id", data_source_id: dataSourceId },
+      pages: [{ properties: properties }]
+    });
+  }
+  function firstCreatedPageId(res) {
+    var created = res.payload && res.payload.pages && res.payload.pages[0];
+    return (created && created.id) || null;
+  }
+  function notionUpdatePage(pageId, properties) {
+    return window.claude.mcp.callTool(NOTION_SERVER, "notion-update-page", {
+      page_id: pageId,
+      command: "update_properties",
+      properties: properties
+    });
+  }
+  function reportSyncFailure(subject, action, err, suffix) {
+    setSyncStatus(subject + "の" + action + "に失敗しました(" + (err && err.code) + ")" + (suffix || ""), true);
+  }
+
+  function notionCreateJob(job) {
+    setSyncStatus("追加内容をNotionに同期しています…");
+    notionCreatePage(NOTION_DATA_SOURCE_ID, jobToNotionProps(job)).then(function (res) {
+      var id = firstCreatedPageId(res);
+      if (id) {
+        job.id = id;
+        job.notionId = id;
+      }
+      setSyncStatus("Notionと同期中(他の端末からも同じデータが見えます)");
+    }).catch(function (err) {
+      reportSyncFailure("「" + job.company + "」", "追加", err, "。ページを再読み込みして再度お試しください。");
+    });
+  }
+
+  function notionUpdateJob(job, changedProps) {
+    if (!job.notionId) return;
+    notionUpdatePage(job.notionId, changedProps).catch(function (err) {
+      reportSyncFailure("「" + job.company + "」", "更新の同期", err);
+    });
+  }
+
+  function notionSoftDeleteJob(job) {
+    if (!job.notionId) return;
+    notionUpdatePage(job.notionId, { "削除済み": "__YES__" }).catch(function (err) {
+      reportSyncFailure("「" + job.company + "」", "削除の同期", err);
+    });
+  }
+
+  // ---------- 調査リンク ----------
+  // 実体の<a target="_blank">として直接クリックで開く(window.open()はポップ
+  // アップブロックで無反応になることがあるため使わない)。
+  function buildSearchUrl(query) {
+    return "https://www.google.com/search?q=" + encodeURIComponent(query);
+  }
+  function buildResearchLinks(company) {
+    return [
+      { label: "🔍 口コミを調べる", url: buildSearchUrl(company + " 評判 (OpenWork OR 転職会議 OR ライトハウス)") },
+      { label: "🏢 企業情報を調べる", url: buildSearchUrl(company + " 会社概要 求人") },
+      { label: "📰 ニュースを調べる", url: buildSearchUrl(company + " ニュース DX 採用") }
+    ];
+  }
+
+  // ---------- 次のアクション ----------
+  function daysUntil(dateStr) {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var d = new Date(dateStr + "T00:00:00");
+    return Math.round((d.getTime() - today.getTime()) / 86400000);
+  }
+
+  function renderNextActions() {
+    var wrap = document.getElementById("nextActionsList");
+    wrap.innerHTML = "";
+    var targets = state.jobs.filter(function (j) {
+      return j.stage !== "見送り" && (j.nextAction || j.deadline);
+    });
+    targets.sort(function (a, b) {
+      var ad = a.deadline ? new Date(a.deadline + "T00:00:00").getTime() : Infinity;
+      var bd = b.deadline ? new Date(b.deadline + "T00:00:00").getTime() : Infinity;
+      return ad - bd;
+    });
+    if (!targets.length) {
+      var empty = document.createElement("p");
+      empty.className = "na-empty";
+      empty.textContent = "次のアクションが設定された企業はありません。";
+      wrap.appendChild(empty);
+      return;
+    }
+    targets.forEach(function (job) {
+      var row = document.createElement("div");
+      row.className = "na-item";
+
+      var urgency = "";
+      var diff = null;
+      if (job.deadline) {
+        diff = daysUntil(job.deadline);
+        if (diff < 0) urgency = "urgency-overdue";
+        else if (diff <= 3) urgency = "urgency-soon";
+      }
+      if (urgency) row.className += " " + urgency;
+
+      var main = document.createElement("div");
+      main.className = "na-main";
+      var companyEl = document.createElement("span");
+      companyEl.className = "na-company";
+      companyEl.textContent = job.company;
+      var badge = document.createElement("span");
+      badge.className = "na-stage-badge";
+      badge.style.background = stageColor(job.stage);
+      badge.textContent = job.stage;
+      main.appendChild(companyEl);
+      main.appendChild(badge);
+      row.appendChild(main);
+
+      if (job.nextAction) {
+        var act = document.createElement("div");
+        act.className = "na-action";
+        act.textContent = job.nextAction;
+        row.appendChild(act);
+      }
+      if (job.deadline) {
+        var dl = document.createElement("div");
+        dl.className = "na-deadline";
+        var diffLabel = diff < 0 ? "期限切れ(" + Math.abs(diff) + "日超過)" : diff === 0 ? "本日締切" : "あと" + diff + "日";
+        dl.textContent = "期限: " + job.deadline + "(" + diffLabel + ")";
+        row.appendChild(dl);
+      }
+      wrap.appendChild(row);
+    });
+  }
+
+  // ---------- 選考ボード ----------
+  function labeledField(labelText, inputEl) {
+    var label = document.createElement("label");
+    var span = document.createElement("span");
+    span.textContent = labelText;
+    label.appendChild(span);
+    label.appendChild(inputEl);
+    return label;
+  }
+
+  function buildJobDetail(container, job) {
+    function onFieldChange(prop, notionKey, transform, needsFullRerender) {
+      return function () {
+        var value = transform ? transform(this.value) : this.value;
+        job[prop] = value;
+        if (needsFullRerender) renderAll();
+        else renderNextActions();
+        if (NOTION_ENABLED) {
+          var props = {};
+          props[notionKey] = value;
+          notionUpdateJob(job, props);
+        }
+      };
+    }
+
+    var companyInput = document.createElement("input");
+    companyInput.type = "text";
+    companyInput.value = job.company;
+    companyInput.addEventListener("change", onFieldChange("company", "企業名", null, true));
+    container.appendChild(labeledField("企業名", companyInput));
+
+    var roleInput = document.createElement("input");
+    roleInput.type = "text";
+    roleInput.value = job.role;
+    roleInput.addEventListener("change", onFieldChange("role", "職種", null, true));
+    container.appendChild(labeledField("職種", roleInput));
+
+    var stageSelect = document.createElement("select");
+    STAGE_OPTIONS.forEach(function (opt) {
+      var o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === job.stage) o.selected = true;
+      stageSelect.appendChild(o);
+    });
+    stageSelect.addEventListener("change", onFieldChange("stage", "ステージ", null, true));
+    container.appendChild(labeledField("ステージ", stageSelect));
+
+    var industrySelect = document.createElement("select");
+    var blankOpt = document.createElement("option");
+    blankOpt.value = "";
+    blankOpt.textContent = "(未設定)";
+    if (!job.industry) blankOpt.selected = true;
+    industrySelect.appendChild(blankOpt);
+    INDUSTRY_OPTIONS.forEach(function (opt) {
+      var o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt;
+      if (opt === job.industry) o.selected = true;
+      industrySelect.appendChild(o);
+    });
+    industrySelect.addEventListener("change", onFieldChange("industry", "業界", null, true));
+    container.appendChild(labeledField("業界", industrySelect));
+
+    var appliedInput = document.createElement("input");
+    appliedInput.type = "date";
+    appliedInput.value = job.appliedDate;
+    appliedInput.addEventListener("change", onFieldChange("appliedDate", "date:応募日:start"));
+    container.appendChild(labeledField("応募日", appliedInput));
+
+    var nextActionInput = document.createElement("input");
+    nextActionInput.type = "text";
+    nextActionInput.value = job.nextAction;
+    nextActionInput.addEventListener("change", onFieldChange("nextAction", "次のアクション"));
+    container.appendChild(labeledField("次のアクション", nextActionInput));
+
+    var deadlineInput = document.createElement("input");
+    deadlineInput.type = "date";
+    deadlineInput.value = job.deadline;
+    deadlineInput.addEventListener("change", onFieldChange("deadline", "date:期限:start"));
+    container.appendChild(labeledField("期限", deadlineInput));
+
+    var urlInput = document.createElement("input");
+    urlInput.type = "text";
+    urlInput.value = job.jobUrl;
+    urlInput.placeholder = "https://...";
+    urlInput.addEventListener("change", onFieldChange("jobUrl", "求人URL", null, true));
+    container.appendChild(labeledField("求人URL", urlInput));
+    if (job.jobUrl) {
+      var urlLink = document.createElement("a");
+      urlLink.href = job.jobUrl;
+      urlLink.target = "_blank";
+      urlLink.rel = "noopener noreferrer";
+      urlLink.className = "job-url-link";
+      urlLink.textContent = "求人ページを開く ↗";
+      container.appendChild(urlLink);
+    }
+
+    var salaryInput = document.createElement("input");
+    salaryInput.type = "text";
+    salaryInput.value = job.salaryRange;
+    salaryInput.placeholder = "例: 400〜500万円";
+    salaryInput.addEventListener("change", onFieldChange("salaryRange", "年収レンジ"));
+    container.appendChild(labeledField("年収レンジ", salaryInput));
+
+    var locationInput = document.createElement("input");
+    locationInput.type = "text";
+    locationInput.value = job.location;
+    locationInput.addEventListener("change", onFieldChange("location", "勤務地"));
+    container.appendChild(labeledField("勤務地", locationInput));
+
+    var desireInput = document.createElement("input");
+    desireInput.type = "number";
+    desireInput.min = "1";
+    desireInput.max = "5";
+    desireInput.value = job.desire;
+    desireInput.addEventListener("change", onFieldChange("desire", "志望度", function (v) {
+      var n = parseInt(v, 10);
+      if (!n || n < 1) n = 1;
+      if (n > 5) n = 5;
+      return n;
+    }, true));
+    container.appendChild(labeledField("志望度(1〜5)", desireInput));
+
+    var memoInput = document.createElement("textarea");
+    memoInput.rows = 3;
+    memoInput.value = job.memo;
+    memoInput.addEventListener("change", onFieldChange("memo", "メモ"));
+    container.appendChild(labeledField("メモ", memoInput));
+
+    var links = document.createElement("div");
+    links.className = "research-links";
+    buildResearchLinks(job.company).forEach(function (link) {
+      var a = document.createElement("a");
+      a.href = link.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = link.label;
+      links.appendChild(a);
+    });
+    container.appendChild(links);
+
+    var deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "delete-job-btn";
+    deleteBtn.textContent = "この企業を削除";
+    deleteBtn.addEventListener("click", function () {
+      if (!window.confirm("「" + job.company + "」を削除しますか?")) return;
+      state.jobs = state.jobs.filter(function (j) { return j !== job; });
+      renderAll();
+      if (NOTION_ENABLED) notionSoftDeleteJob(job);
+    });
+    container.appendChild(deleteBtn);
+  }
+
+  function buildJobCard(job) {
+    var card = document.createElement("div");
+    card.className = "job-card";
+
+    var head = document.createElement("div");
+    head.className = "job-card-head";
+    var companyEl = document.createElement("span");
+    companyEl.className = "job-company";
+    companyEl.textContent = job.company;
+    var stageBadge = document.createElement("span");
+    stageBadge.className = "job-stage-badge";
+    stageBadge.style.background = stageColor(job.stage);
+    stageBadge.textContent = job.stage;
+    var desireEl = document.createElement("span");
+    desireEl.className = "job-desire";
+    desireEl.textContent = "★".repeat(job.desire) + "☆".repeat(Math.max(0, 5 - job.desire));
+    head.appendChild(companyEl);
+    head.appendChild(stageBadge);
+    head.appendChild(desireEl);
+    card.appendChild(head);
+
+    var sub = document.createElement("div");
+    sub.className = "job-card-sub";
+    if (job.role) {
+      var roleEl = document.createElement("span");
+      roleEl.textContent = job.role;
+      sub.appendChild(roleEl);
+    }
+    if (job.industry) {
+      var indEl = document.createElement("span");
+      indEl.className = "industry-tag";
+      indEl.textContent = job.industry;
+      sub.appendChild(indEl);
+    }
+    card.appendChild(sub);
+
+    var toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "expand-btn";
+    toggleBtn.textContent = job.expanded ? "▾ 閉じる" : "▸ 詳細を編集";
+    card.appendChild(toggleBtn);
+
+    var detail = document.createElement("div");
+    detail.className = "job-detail";
+    detail.style.display = job.expanded ? "flex" : "none";
+    buildJobDetail(detail, job);
+    card.appendChild(detail);
+
+    toggleBtn.addEventListener("click", function () {
+      job.expanded = !job.expanded;
+      detail.style.display = job.expanded ? "flex" : "none";
+      toggleBtn.textContent = job.expanded ? "▾ 閉じる" : "▸ 詳細を編集";
+    });
+
+    return card;
+  }
+
+  function renderBoard() {
+    var wrap = document.getElementById("boardColumns");
+    wrap.innerHTML = "";
+    STAGE_META.forEach(function (meta) {
+      var col = document.createElement("div");
+      col.className = "board-col";
+      col.style.setProperty("--line-color", meta.color);
+
+      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; });
+
+      var head = document.createElement("div");
+      head.className = "station-head";
+      var rail = document.createElement("span");
+      rail.className = "rail-line";
+      var dot = document.createElement("span");
+      dot.className = "station-dot";
+      var nameEl = document.createElement("span");
+      nameEl.className = "station-name";
+      nameEl.textContent = meta.name;
+      var countEl = document.createElement("span");
+      countEl.className = "station-count";
+      countEl.textContent = jobsInStage.length + "件";
+      head.appendChild(rail);
+      head.appendChild(dot);
+      head.appendChild(nameEl);
+      head.appendChild(countEl);
+      col.appendChild(head);
+
+      var cardsWrap = document.createElement("div");
+      cardsWrap.className = "col-cards";
+      if (!jobsInStage.length) {
+        var empty = document.createElement("p");
+        empty.className = "col-empty";
+        empty.textContent = "まだありません";
+        cardsWrap.appendChild(empty);
+      } else {
+        jobsInStage.forEach(function (job) {
+          cardsWrap.appendChild(buildJobCard(job));
+        });
+      }
+      col.appendChild(cardsWrap);
+      wrap.appendChild(col);
+    });
+  }
+
+  function renderAll() {
+    renderNextActions();
+    renderBoard();
+  }
+
+  // ---------- Init ----------
+  function init() {
+    function addJobFromInput() {
+      var input = document.getElementById("companyInput");
+      var name = input.value.trim();
+      if (!name) return;
+      var job = createJob(name);
+      state.jobs.push(job);
+      input.value = "";
+      renderAll();
+      input.focus();
+      if (NOTION_ENABLED) notionCreateJob(job);
+    }
+    document.getElementById("addJobBtn").addEventListener("click", addJobFromInput);
+    document.getElementById("companyInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") addJobFromInput();
+    });
+
+    if (NOTION_ENABLED) {
+      setSyncStatus("Notionから読み込んでいます…");
+      notionLoadJobs().then(function (jobs) {
+        state.jobs = jobs;
+        renderAll();
+        setSyncStatus("Notionと同期中(他の端末からも同じデータが見えます)");
+      }).catch(function (err) {
+        setSyncStatus("Notionからの読み込みに失敗しました(" + (err && err.code) + ")。ページを再読み込みしてください。", true);
+        renderAll();
+      });
+    } else {
+      setSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
+      renderAll();
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
