@@ -51,6 +51,48 @@
 
   #companyInput { flex: 1; min-width: 200px; }
 
+  /* ---------- タブ切り替え ---------- */
+  .tab-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .tab-btn {
+    background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+    padding: 9px 18px; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.9rem;
+  }
+  .tab-btn:hover { background: var(--bg); }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab-section { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ---------- 視野を広げる ---------- */
+  .horizon-list { display: flex; flex-direction: column; gap: 8px; }
+  .horizon-item { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--bg); }
+  .horizon-item-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .horizon-content-input { flex: 1; font-weight: 600; }
+  .horizon-source-tag {
+    font-size: 0.72rem; color: var(--muted); background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+  }
+  .horizon-memo-input { width: 100%; margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
+  .delete-horizon-btn {
+    background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.78rem;
+    padding: 2px 6px; white-space: nowrap;
+  }
+  .delete-horizon-btn:hover { color: var(--danger); }
+  .horizon-empty { color: var(--muted); text-align: center; padding: 16px 0; font-size: 0.88rem; }
+
+  .virtue-block, .horizon-qa-block {
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;
+  }
+  .virtue-block:last-child, .horizon-qa-block:last-child { margin-bottom: 0; }
+  .virtue-block summary { cursor: pointer; font-weight: 700; font-size: 0.92rem; }
+  .horizon-question { font-weight: 600; font-size: 0.88rem; margin: 0; }
+
+  .horizon-mini-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .horizon-mini-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    font-size: 0.82rem; background: var(--bg); border-radius: 6px; padding: 5px 9px;
+  }
+  .horizon-mini-item .rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; }
+  .horizon-mini-item .rm:hover { color: var(--danger); }
+
   /* ---------- 次のアクション ---------- */
   .na-list { display: flex; flex-direction: column; gap: 8px; }
   .na-item {
@@ -131,18 +173,57 @@
     <p class="hint" id="syncStatus"></p>
   </div>
 
-  <div class="panel">
-    <h2>次のアクション</h2>
-    <div class="na-list" id="nextActionsList"></div>
+  <div class="tab-row" id="tabRow">
+    <button type="button" class="tab-btn active" data-tab="board">選考ボード</button>
+    <button type="button" class="tab-btn" data-tab="horizon">視野を広げる</button>
   </div>
 
-  <div class="panel">
-    <h2>選考ボード</h2>
-    <div class="row" style="margin-bottom: 14px;">
-      <input type="text" id="companyInput" placeholder="企業名を入力してEnter">
-      <button id="addJobBtn">追加</button>
+  <div class="tab-section" id="boardSection">
+    <div class="panel">
+      <h2>次のアクション</h2>
+      <div class="na-list" id="nextActionsList"></div>
     </div>
-    <div class="board-columns" id="boardColumns"></div>
+
+    <div class="panel">
+      <h2>選考ボード</h2>
+      <div class="row" style="margin-bottom: 14px;">
+        <input type="text" id="companyInput" placeholder="企業名を入力してEnter">
+        <button id="addJobBtn">追加</button>
+      </div>
+      <div class="board-columns" id="boardColumns"></div>
+    </div>
+  </div>
+
+  <div class="tab-section" id="horizonSection" style="display:none;">
+    <p class="hint" id="horizonSyncStatus"></p>
+
+    <div class="panel">
+      <h2>イニシャルリスト</h2>
+      <p class="hint" style="margin-bottom: 10px;">仕事の選択肢を自由に書き出す欄です。評価や絞り込みはせず、思いついたものを気軽に足してください。下のセクションから追加した項目もここに集まります。</p>
+      <textarea id="horizonFreeInput" rows="3" placeholder="1行1項目で入力(複数行まとめて追加できます)&#10;例: 地方移住して林業" style="width:100%;"></textarea>
+      <div class="row" style="margin-top: 8px;">
+        <button type="button" id="addHorizonFreeBtn">リストに追加</button>
+      </div>
+      <div class="horizon-list" id="horizonList" style="margin-top: 14px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>徳目アテンション</h2>
+      <p class="hint" style="margin-bottom: 10px;">7つの徳目それぞれの定義を確認しながら、その観点で思いついた職種をイニシャルリストに追加できます。</p>
+      <div id="virtueAttentionList"></div>
+    </div>
+
+    <div class="panel">
+      <h2>徳目クエスチョン</h2>
+      <p class="hint" style="margin-bottom: 10px;">7つの徳目に対応する問いかけです。答えて思いついたものをイニシャルリストに追加できます。</p>
+      <div id="virtueQuestionList"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ブロックを外す8つの質問</h2>
+      <p class="hint" style="margin-bottom: 10px;">選択肢が思いつかないときのための問いです。答えて思いついたものをイニシャルリストに追加できます。</p>
+      <div id="blockQuestionList"></div>
+    </div>
   </div>
 </div>
 
@@ -163,12 +244,50 @@
   var STAGE_OPTIONS = STAGE_META.map(function (s) { return s.name; });
   var INDUSTRY_OPTIONS = ["製造", "建設", "不動産", "IT", "その他"];
 
+  // ---------- 視野を広げる(データ) ----------
+  // 「科学的な適職」の「仕事の幸福度を決める7つの徳目」に基づく。
+  var VIRTUES = [
+    { name: "自由", def: "仕事の時間・場所・ペースを自分で決められるか" },
+    { name: "達成", def: "仕事のフィードバックをはっきり確認できるか" },
+    { name: "焦点", def: "自分のモチベーションタイプ(攻撃型/防御型)を活かせるか" },
+    { name: "明確", def: "タスクの内容と評価システムがはっきりしているか" },
+    { name: "多様", def: "プロジェクトの川上から川下まで関われるか" },
+    { name: "仲間", def: "自分に似た人、仲良くなれそうな人が多いか" },
+    { name: "貢献", def: "他人への貢献が目に見えやすいか" }
+  ];
+
+  // 各徳目に対応する問いかけ。「自由」以外はユーザーから原文の指定が
+  // なかったため、与えられた例(自由)と徳目の定義から同じ形式で作成した
+  // ものであり、書籍の原文そのままではない(推論)。原文と異なる場合は
+  // textを差し替えてください。
+  var VIRTUE_QUESTIONS = [
+    { virtue: "自由", text: "仕事をする時間・場所・ペースを自分で決められそうな仕事や職種はほかにないだろうか?" },
+    { virtue: "達成", text: "仕事の成果やフィードバックをはっきり確認できそうな仕事や職種はほかにないだろうか?" },
+    { virtue: "焦点", text: "自分のモチベーションタイプ(攻撃型/防御型)を活かせそうな仕事や職種はほかにないだろうか?" },
+    { virtue: "明確", text: "タスクの内容と評価基準がはっきりしていそうな仕事や職種はほかにないだろうか?" },
+    { virtue: "多様", text: "プロジェクトの川上から川下まで関われそうな仕事や職種はほかにないだろうか?" },
+    { virtue: "仲間", text: "自分に似た人、仲良くなれそうな人が多そうな仕事や職種はほかにないだろうか?" },
+    { virtue: "貢献", text: "他人への貢献が目に見えやすそうな仕事や職種はほかにないだろうか?" }
+  ];
+
+  // ユーザーから提示された原文をそのまま使用(7問。見出しは「8つの質問」
+  // だが、渡された原文は7問だった)。
+  var BLOCK_QUESTIONS = [
+    "イニシャルリストの選択肢がどれも選べなかったら、他にどんな可能性があるか",
+    "ありあまるお金を持っていたら、同じ選択肢を選ぶか",
+    "何の不安も心配事もないとしたら、他にどんな可能性があるか",
+    "これまでの努力が全て無駄だったとしたら、他にどんな選択肢があるか",
+    "この選択肢を選ぶことで、人生でできなくなることはないか",
+    "尊敬する人ならどんな助言をくれるか(故人や架空の人物でも可)",
+    "過去の仕事や友人のつながりから、別の選択肢は考えられないか"
+  ];
+
   function stageColor(name) {
     var meta = STAGE_META.filter(function (s) { return s.name === name; })[0];
     return meta ? meta.color : "#9aa1ad";
   }
 
-  var state = { jobs: [] };
+  var state = { jobs: [], horizonItems: [] };
   var nextId = 1;
 
   function createJob(name) {
@@ -201,8 +320,12 @@
       var BRIDGE_BASE = "https://notion-bridge.rattuti.workers.dev";
       var APP_KEY_STORAGE = "notion_bridge_key";
       var NOTION_DATA_SOURCE_ID_LOCAL = "e371bbf6-6920-4a28-a7d7-57334f5ce084";
+      // 「視野を広げる」機能用のデータソースID。実際の値を受け取り次第、
+      // ここと下のNOTION_HORIZON_DATA_SOURCE_ID(app本体側)の両方を置き換える。
+      var NOTION_HORIZON_DATA_SOURCE_ID_LOCAL = "REPLACE_WITH_HORIZON_DATA_SOURCE_ID";
       var VIEW_TO_DATA_SOURCE = {};
       VIEW_TO_DATA_SOURCE["view://" + NOTION_DATA_SOURCE_ID_LOCAL] = NOTION_DATA_SOURCE_ID_LOCAL;
+      VIEW_TO_DATA_SOURCE["view://" + NOTION_HORIZON_DATA_SOURCE_ID_LOCAL] = NOTION_HORIZON_DATA_SOURCE_ID_LOCAL;
 
       // notion-query-database-view/notion-create-pagesで取得・作成した各ページIDが
       // どのデータソース(DB)に属するかを控えておく。notion-update-pageはpage_idしか
@@ -291,6 +414,12 @@
   var NOTION_SERVER = "Notion";
   var NOTION_DATA_SOURCE_ID = "e371bbf6-6920-4a28-a7d7-57334f5ce084";
   var NOTION_VIEW_URL = "view://" + NOTION_DATA_SOURCE_ID;
+  // 「視野を広げる」機能用のデータソースID(未設定のプレースホルダー)。
+  // 実際の値を受け取り次第、ここと上のシム内のNOTION_HORIZON_DATA_SOURCE_ID_LOCAL
+  // の両方を置き換える。未設定の間はこの機能のNotion同期のみ失敗する
+  // (ローカルでの追加・編集・削除自体は問題なく使える)。
+  var NOTION_HORIZON_DATA_SOURCE_ID = "REPLACE_WITH_HORIZON_DATA_SOURCE_ID";
+  var NOTION_HORIZON_VIEW_URL = "view://" + NOTION_HORIZON_DATA_SOURCE_ID;
 
   function extractPageId(url) {
     var m = /([0-9a-f]{32})(?:\?.*)?$/i.exec(url || "");
@@ -345,6 +474,14 @@
 
   function setSyncStatus(text, isError) {
     var el = document.getElementById("syncStatus");
+    el.textContent = text;
+    el.className = "hint" + (isError ? " sync-error" : "");
+  }
+
+  // 「視野を広げる」の同期状況は選考ボードとは別のhint要素に出す(データ
+  // ソースが別なので、同期状況が混ざって表示されるのを避けるため)。
+  function setHorizonSyncStatus(text, isError) {
+    var el = document.getElementById("horizonSyncStatus");
     el.textContent = text;
     el.className = "hint" + (isError ? " sync-error" : "");
   }
@@ -422,6 +559,63 @@
     if (!job.notionId) return;
     notionUpdatePage(job.notionId, { "削除済み": "__YES__" }).catch(function (err) {
       reportSyncFailure("「" + job.company + "」", "削除の同期", err);
+    });
+  }
+
+  // ---------- 視野を広げる(Notion I/O) ----------
+  function horizonItemToNotionProps(item) {
+    return {
+      "内容": item.content,
+      "出どころ": item.source || "",
+      "メモ": item.memo || "",
+      "削除済み": "__NO__"
+    };
+  }
+
+  function notionRowToHorizonItem(row) {
+    var pageId = extractPageId(row.url);
+    return {
+      id: pageId,
+      notionId: pageId,
+      content: row["内容"] || "",
+      source: row["出どころ"] || "",
+      memo: row["メモ"] || ""
+    };
+  }
+
+  function notionLoadHorizonItems() {
+    return queryAllViewRows(NOTION_HORIZON_VIEW_URL).then(function (rows) {
+      return filterActiveRows(rows).map(notionRowToHorizonItem);
+    });
+  }
+
+  function reportHorizonSyncFailure(subject, action, err) {
+    setHorizonSyncStatus(subject + "の" + action + "に失敗しました(" + (err && err.code) + ")", true);
+  }
+
+  function notionCreateHorizonItem(item) {
+    notionCreatePage(NOTION_HORIZON_DATA_SOURCE_ID, horizonItemToNotionProps(item)).then(function (res) {
+      var id = firstCreatedPageId(res);
+      if (id) {
+        item.id = id;
+        item.notionId = id;
+      }
+    }).catch(function (err) {
+      reportHorizonSyncFailure("「" + item.content + "」", "追加", err);
+    });
+  }
+
+  function notionUpdateHorizonItem(item, changedProps) {
+    if (!item.notionId) return;
+    notionUpdatePage(item.notionId, changedProps).catch(function (err) {
+      reportHorizonSyncFailure("「" + item.content + "」", "更新の同期", err);
+    });
+  }
+
+  function notionSoftDeleteHorizonItem(item) {
+    if (!item.notionId) return;
+    notionUpdatePage(item.notionId, { "削除済み": "__YES__" }).catch(function (err) {
+      reportHorizonSyncFailure("「" + item.content + "」", "削除の同期", err);
     });
   }
 
@@ -770,6 +964,228 @@
     renderBoard();
   }
 
+  // ---------- 視野を広げる(UI) ----------
+  var nextHorizonId = 1;
+
+  // 複数件まとめて追加してから1回だけ再描画する(自由記述欄での複数行
+  // 貼り付けに対応するため)。1件だけ追加したい場合はaddHorizonItem()を使う。
+  function addHorizonItems(entries) {
+    entries.forEach(function (entry) {
+      var item = {
+        id: "temp-" + (nextHorizonId++),
+        notionId: null,
+        content: entry.content,
+        source: entry.source || "",
+        memo: ""
+      };
+      state.horizonItems.push(item);
+      if (NOTION_ENABLED) notionCreateHorizonItem(item);
+    });
+    renderHorizonAll();
+  }
+
+  function addHorizonItem(content, source) {
+    addHorizonItems([{ content: content, source: source }]);
+  }
+
+  function updateHorizonItemContent(item, newContent) {
+    item.content = newContent;
+    renderHorizonAll();
+    if (NOTION_ENABLED) notionUpdateHorizonItem(item, { "内容": item.content });
+  }
+
+  function updateHorizonItemMemo(item, newMemo) {
+    item.memo = newMemo;
+    if (NOTION_ENABLED) notionUpdateHorizonItem(item, { "メモ": item.memo });
+  }
+
+  function deleteHorizonItem(item) {
+    state.horizonItems = state.horizonItems.filter(function (i) { return i !== item; });
+    renderHorizonAll();
+    if (NOTION_ENABLED) notionSoftDeleteHorizonItem(item);
+  }
+
+  function buildHorizonItemRow(item) {
+    var row = document.createElement("div");
+    row.className = "horizon-item";
+
+    var head = document.createElement("div");
+    head.className = "horizon-item-head";
+
+    var contentInput = document.createElement("input");
+    contentInput.type = "text";
+    contentInput.className = "horizon-content-input";
+    contentInput.value = item.content;
+    contentInput.addEventListener("change", function () {
+      var v = contentInput.value.trim();
+      if (!v) { contentInput.value = item.content; return; }
+      updateHorizonItemContent(item, v);
+    });
+    head.appendChild(contentInput);
+
+    var sourceTag = document.createElement("span");
+    sourceTag.className = "horizon-source-tag";
+    sourceTag.textContent = item.source || "自由記述";
+    head.appendChild(sourceTag);
+
+    var rmBtn = document.createElement("button");
+    rmBtn.type = "button";
+    rmBtn.className = "delete-horizon-btn";
+    rmBtn.textContent = "削除";
+    rmBtn.addEventListener("click", function () { deleteHorizonItem(item); });
+    head.appendChild(rmBtn);
+
+    row.appendChild(head);
+
+    var memoInput = document.createElement("input");
+    memoInput.type = "text";
+    memoInput.className = "horizon-memo-input";
+    memoInput.placeholder = "メモ(任意)";
+    memoInput.value = item.memo || "";
+    memoInput.addEventListener("change", function () {
+      updateHorizonItemMemo(item, memoInput.value);
+    });
+    row.appendChild(memoInput);
+
+    return row;
+  }
+
+  function renderInitialList() {
+    var wrap = document.getElementById("horizonList");
+    wrap.innerHTML = "";
+    if (!state.horizonItems.length) {
+      var empty = document.createElement("p");
+      empty.className = "horizon-empty";
+      empty.textContent = "まだ何も追加されていません。自由記述や下のセクションから書き出してみましょう。";
+      wrap.appendChild(empty);
+      return;
+    }
+    state.horizonItems.forEach(function (item) {
+      wrap.appendChild(buildHorizonItemRow(item));
+    });
+  }
+
+  // 特定の出どころ(徳目名・質問番号)に紐づくイニシャルリストの項目だけを
+  // 小さく一覧表示する。徳目アテンション/徳目クエスチョン/ブロックを外す
+  // 質問の各ブロック末尾で、その場で追加したものをすぐ確認できるようにする。
+  function buildHorizonMiniList(source) {
+    var wrap = document.createElement("div");
+    wrap.className = "horizon-mini-list";
+    state.horizonItems.filter(function (i) { return i.source === source; }).forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "horizon-mini-item";
+      var span = document.createElement("span");
+      span.textContent = item.content;
+      var rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "rm";
+      rm.textContent = "削除";
+      rm.addEventListener("click", function () { deleteHorizonItem(item); });
+      row.appendChild(span);
+      row.appendChild(rm);
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+
+  // 追加のたびにrenderHorizonAll()で全体を再描画するため、追加直後に元の
+  // input要素への参照はDOMから外れてしまう。inputIdで新しいinput要素を
+  // 探し直してフォーカスを当て、連続で入力しやすくする。
+  function buildQuickAddRow(placeholderText, source, inputId) {
+    var row = document.createElement("div");
+    row.className = "row";
+    row.style.marginTop = "8px";
+    var input = document.createElement("input");
+    input.type = "text";
+    input.id = inputId;
+    input.placeholder = placeholderText;
+    input.style.flex = "1";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "追加";
+    function submit() {
+      var v = input.value.trim();
+      if (!v) return;
+      addHorizonItem(v, source);
+      var fresh = document.getElementById(inputId);
+      if (fresh) fresh.focus();
+    }
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+    row.appendChild(input);
+    row.appendChild(btn);
+    return row;
+  }
+
+  var virtueDetailsOpen = {};
+
+  function renderVirtueAttention() {
+    var wrap = document.getElementById("virtueAttentionList");
+    wrap.innerHTML = "";
+    VIRTUES.forEach(function (virtue) {
+      var details = document.createElement("details");
+      details.className = "virtue-block";
+      details.open = !!virtueDetailsOpen[virtue.name];
+      details.addEventListener("toggle", function () { virtueDetailsOpen[virtue.name] = details.open; });
+
+      var summary = document.createElement("summary");
+      summary.textContent = virtue.name;
+      details.appendChild(summary);
+
+      var defP = document.createElement("p");
+      defP.className = "hint";
+      defP.style.marginTop = "6px";
+      defP.textContent = virtue.def;
+      details.appendChild(defP);
+
+      details.appendChild(buildQuickAddRow("この観点で思いついた職種", virtue.name, "qadd-virtue-" + virtue.name));
+      details.appendChild(buildHorizonMiniList(virtue.name));
+
+      wrap.appendChild(details);
+    });
+  }
+
+  function renderVirtueQuestions() {
+    var wrap = document.getElementById("virtueQuestionList");
+    wrap.innerHTML = "";
+    VIRTUE_QUESTIONS.forEach(function (q, idx) {
+      var source = "徳目質問" + (idx + 1) + "(" + q.virtue + ")";
+      var block = document.createElement("div");
+      block.className = "horizon-qa-block";
+      var qText = document.createElement("p");
+      qText.className = "horizon-question";
+      qText.textContent = q.text;
+      block.appendChild(qText);
+      block.appendChild(buildQuickAddRow("思いついたことを書く", source, "qadd-vq-" + idx));
+      block.appendChild(buildHorizonMiniList(source));
+      wrap.appendChild(block);
+    });
+  }
+
+  function renderBlockQuestions() {
+    var wrap = document.getElementById("blockQuestionList");
+    wrap.innerHTML = "";
+    BLOCK_QUESTIONS.forEach(function (q, idx) {
+      var source = "ブロック質問" + (idx + 1);
+      var block = document.createElement("div");
+      block.className = "horizon-qa-block";
+      var qText = document.createElement("p");
+      qText.className = "horizon-question";
+      qText.textContent = q;
+      block.appendChild(qText);
+      block.appendChild(buildQuickAddRow("思いついたことを書く", source, "qadd-bq-" + idx));
+      block.appendChild(buildHorizonMiniList(source));
+      wrap.appendChild(block);
+    });
+  }
+
+  function renderHorizonAll() {
+    renderInitialList();
+    renderVirtueAttention();
+    renderVirtueQuestions();
+    renderBlockQuestions();
+  }
+
   // ---------- Init ----------
   function init() {
     function addJobFromInput() {
@@ -788,6 +1204,32 @@
       if (e.key === "Enter") addJobFromInput();
     });
 
+    // ---------- タブ切り替え ----------
+    function switchTab(tab) {
+      document.getElementById("boardSection").style.display = tab === "board" ? "" : "none";
+      document.getElementById("horizonSection").style.display = tab === "horizon" ? "" : "none";
+      Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
+      btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
+    });
+
+    // ---------- イニシャルリスト(自由記述の複数行追加) ----------
+    function addHorizonFreeFromTextarea() {
+      var textarea = document.getElementById("horizonFreeInput");
+      var lines = textarea.value.split("\n").map(function (l) { return l.trim(); }).filter(function (l) { return l; });
+      if (!lines.length) return;
+      addHorizonItems(lines.map(function (l) { return { content: l, source: "自由記述" }; }));
+      textarea.value = "";
+      textarea.focus();
+    }
+    document.getElementById("addHorizonFreeBtn").addEventListener("click", addHorizonFreeFromTextarea);
+
+    // 選考ボードとは別データソースのため、読み込みは選考ボードと独立させる
+    // (「視野を広げる」のデータソースIDが未設定でも選考ボードの同期には
+    // 影響しないようにするため)。
     if (NOTION_ENABLED) {
       setSyncStatus("Notionから読み込んでいます…");
       notionLoadJobs().then(function (jobs) {
@@ -798,9 +1240,21 @@
         setSyncStatus("Notionからの読み込みに失敗しました(" + (err && err.code) + ")。ページを再読み込みしてください。", true);
         renderAll();
       });
+
+      setHorizonSyncStatus("Notionから読み込んでいます…");
+      notionLoadHorizonItems().then(function (items) {
+        state.horizonItems = items;
+        renderHorizonAll();
+        setHorizonSyncStatus("Notionと同期中(他の端末からも同じデータが見えます)");
+      }).catch(function (err) {
+        setHorizonSyncStatus("Notionからの読み込みに失敗しました(" + (err && err.code) + ")。データソースIDが未設定の可能性があります。", true);
+        renderHorizonAll();
+      });
     } else {
       setSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
+      setHorizonSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
       renderAll();
+      renderHorizonAll();
     }
   }
 
