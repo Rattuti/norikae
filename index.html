@@ -70,7 +70,12 @@
     font-size: 0.72rem; color: var(--muted); background: var(--panel); border: 1px solid var(--border);
     border-radius: 999px; padding: 2px 10px; white-space: nowrap;
   }
-  .horizon-memo-input { width: 100%; margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
+  .horizon-item-sub { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .horizon-attention-label {
+    display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--muted); flex-shrink: 0;
+  }
+  .horizon-attention-input { width: 48px; }
+  .horizon-memo-input { flex: 1; font-size: 0.82rem; color: var(--muted); }
   .delete-horizon-btn {
     background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.78rem;
     padding: 2px 6px; white-space: nowrap;
@@ -92,6 +97,45 @@
   }
   .horizon-mini-item .rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0 4px; }
   .horizon-mini-item .rm:hover { color: var(--danger); }
+  .horizon-block-shared-list { margin-top: 4px; }
+
+  /* ---------- マトリックス分析 ---------- */
+  .matrix-table-wrap { overflow-x: auto; }
+  .matrix-table { border-collapse: collapse; font-size: 0.85rem; min-width: 100%; }
+  .matrix-table th, .matrix-table td {
+    border: 1px solid var(--border); padding: 8px 10px; text-align: center; white-space: nowrap;
+  }
+  .matrix-table th { background: var(--bg); font-weight: 700; }
+  .matrix-criterion-col { text-align: left; min-width: 180px; }
+  .matrix-criterion-cell { text-align: left; }
+  .matrix-criterion-name { font-weight: 600; }
+  .matrix-criterion-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+  .matrix-weight-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
+  .matrix-weight-input { width: 48px; }
+  .matrix-importance-input { width: 52px; text-align: center; }
+  .matrix-candidate-head { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .matrix-candidate-rm { background: none; border: none; color: var(--muted); font-size: 0.72rem; cursor: pointer; padding: 0; }
+  .matrix-candidate-rm:hover { color: var(--danger); }
+  .matrix-total-row td { font-weight: 700; background: var(--bg); }
+  .matrix-total-cell.matrix-best { background: var(--accent); color: #fff; }
+  .matrix-empty { color: var(--muted); text-align: center; padding: 20px 0; font-size: 0.9rem; }
+  .matrix-rationale-input { width: 70px; font-size: 0.7rem; margin-top: 4px; display: block; }
+
+  .matrix-mobile { display: none; }
+  .matrix-mobile-select-label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: var(--muted); flex: 1; }
+  .matrix-mobile-total {
+    font-size: 1rem; font-weight: 700; padding: 10px 14px; border-radius: 8px;
+    background: var(--bg); margin-bottom: 12px; text-align: center;
+  }
+  .matrix-mobile-row {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;
+  }
+  .matrix-mobile-row:last-child { margin-bottom: 0; }
+  .matrix-mobile-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .matrix-mobile-criterion { flex: 1; min-width: 0; }
+  .matrix-mobile-criterion .matrix-criterion-name { display: block; }
+  .matrix-rationale-input-mobile { width: 100%; font-size: 0.82rem; }
 
   /* ---------- 次のアクション ---------- */
   .na-list { display: flex; flex-direction: column; gap: 8px; }
@@ -162,6 +206,8 @@
     .job-stage-badge { display: inline-block; }
     button, .expand-btn, .research-links a { min-height: 40px; }
     .research-links a { display: flex; align-items: center; }
+    .matrix-desktop { display: none; }
+    .matrix-mobile { display: block; }
   }
 </style>
 </head>
@@ -176,6 +222,7 @@
   <div class="tab-row" id="tabRow">
     <button type="button" class="tab-btn active" data-tab="board">選考ボード</button>
     <button type="button" class="tab-btn" data-tab="horizon">視野を広げる</button>
+    <button type="button" class="tab-btn" data-tab="matrix">マトリックス分析</button>
   </div>
 
   <div class="tab-section" id="boardSection">
@@ -200,9 +247,9 @@
     <div class="panel">
       <h2>イニシャルリスト</h2>
       <p class="hint" style="margin-bottom: 10px;">仕事の選択肢を自由に書き出す欄です。評価や絞り込みはせず、思いついたものを気軽に足してください。下のセクションから追加した項目もここに集まります。</p>
-      <textarea id="horizonFreeInput" rows="3" placeholder="1行1項目で入力(複数行まとめて追加できます)&#10;例: 地方移住して林業" style="width:100%;"></textarea>
-      <div class="row" style="margin-top: 8px;">
-        <button type="button" id="addHorizonFreeBtn">リストに追加</button>
+      <div class="row">
+        <input type="text" id="horizonFreeInput" placeholder="例: 地方移住して林業(入力してEnter)" style="flex:1; min-width:220px;">
+        <button type="button" id="addHorizonFreeBtn">追加</button>
       </div>
       <div class="horizon-list" id="horizonList" style="margin-top: 14px;"></div>
     </div>
@@ -223,6 +270,35 @@
       <h2>ブロックを外す8つの質問</h2>
       <p class="hint" style="margin-bottom: 10px;">選択肢が思いつかないときのための問いです。答えて思いついたものをイニシャルリストに追加できます。</p>
       <div id="blockQuestionList"></div>
+    </div>
+  </div>
+
+  <div class="tab-section" id="matrixSection" style="display:none;">
+    <p class="hint" id="matrixSyncStatus"></p>
+
+    <div class="panel">
+      <h2>マトリックス分析</h2>
+      <p class="hint" style="margin-bottom: 10px;">基準ごとの重み × 各候補の重要度から合計点を自動計算します。重みが未設定の基準は1として扱います。</p>
+      <div class="row" style="margin-bottom: 14px;">
+        <input type="text" id="matrixCandidateInput" placeholder="候補名を入力してEnter">
+        <button type="button" id="addMatrixCandidateBtn">候補を追加</button>
+        <select id="matrixImportCandidateSelect">
+          <option value="">イニシャルリストから選ぶ…</option>
+        </select>
+      </div>
+
+      <div class="matrix-table-wrap matrix-desktop">
+        <table class="matrix-table" id="matrixTable"></table>
+      </div>
+
+      <div class="matrix-mobile">
+        <div class="row" style="margin-bottom: 10px;">
+          <label class="matrix-mobile-select-label">採点する候補
+            <select id="matrixMobileCandidateSelect"></select>
+          </label>
+        </div>
+        <div id="matrixMobileBody"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -287,7 +363,10 @@
     return meta ? meta.color : "#9aa1ad";
   }
 
-  var state = { jobs: [], horizonItems: [] };
+  // pendingCandidates: 候補として追加されたが、まだ1件も採点していない
+  // (=Notion上に対応する行がまだ無い)候補名。採点すると自動的にここから
+  // 外れ、scores側の候補名として実質的に永続化される。
+  var state = { jobs: [], horizonItems: [], criteria: [], scores: [], pendingCandidates: [] };
   var nextId = 1;
 
   function createJob(name) {
@@ -320,12 +399,14 @@
       var BRIDGE_BASE = "https://notion-bridge.rattuti.workers.dev";
       var APP_KEY_STORAGE = "notion_bridge_key";
       var NOTION_DATA_SOURCE_ID_LOCAL = "1d34ea64-371e-416d-8f85-6b690a59d0f4";
-      // 「視野を広げる」機能用のデータソースID。実際の値を受け取り次第、
-      // ここと下のNOTION_HORIZON_DATA_SOURCE_ID(app本体側)の両方を置き換える。
-      var NOTION_HORIZON_DATA_SOURCE_ID_LOCAL = "0796f263-cfa4-4a72-949d-276cf0533118";
+      var NOTION_HORIZON_DATA_SOURCE_ID_LOCAL = "f16c3234-e7c3-47c2-822d-9f8748f9d181";
+      var NOTION_CRITERIA_DATA_SOURCE_ID_LOCAL = "8a0e9b53-7f52-414f-8bb2-839e636f3044";
+      var NOTION_SCORE_DATA_SOURCE_ID_LOCAL = "6d4c91e1-208e-4373-b617-937943c738e0";
       var VIEW_TO_DATA_SOURCE = {};
       VIEW_TO_DATA_SOURCE["view://" + NOTION_DATA_SOURCE_ID_LOCAL] = NOTION_DATA_SOURCE_ID_LOCAL;
       VIEW_TO_DATA_SOURCE["view://" + NOTION_HORIZON_DATA_SOURCE_ID_LOCAL] = NOTION_HORIZON_DATA_SOURCE_ID_LOCAL;
+      VIEW_TO_DATA_SOURCE["view://" + NOTION_CRITERIA_DATA_SOURCE_ID_LOCAL] = NOTION_CRITERIA_DATA_SOURCE_ID_LOCAL;
+      VIEW_TO_DATA_SOURCE["view://" + NOTION_SCORE_DATA_SOURCE_ID_LOCAL] = NOTION_SCORE_DATA_SOURCE_ID_LOCAL;
 
       // notion-query-database-view/notion-create-pagesで取得・作成した各ページIDが
       // どのデータソース(DB)に属するかを控えておく。notion-update-pageはpage_idしか
@@ -414,12 +495,12 @@
   var NOTION_SERVER = "Notion";
   var NOTION_DATA_SOURCE_ID = "1d34ea64-371e-416d-8f85-6b690a59d0f4";
   var NOTION_VIEW_URL = "view://" + NOTION_DATA_SOURCE_ID;
-  // 「視野を広げる」機能用のデータソースID(未設定のプレースホルダー)。
-  // 実際の値を受け取り次第、ここと上のシム内のNOTION_HORIZON_DATA_SOURCE_ID_LOCAL
-  // の両方を置き換える。未設定の間はこの機能のNotion同期のみ失敗する
-  // (ローカルでの追加・編集・削除自体は問題なく使える)。
-  var NOTION_HORIZON_DATA_SOURCE_ID = "0796f263-cfa4-4a72-949d-276cf0533118";
+  var NOTION_HORIZON_DATA_SOURCE_ID = "f16c3234-e7c3-47c2-822d-9f8748f9d181";
   var NOTION_HORIZON_VIEW_URL = "view://" + NOTION_HORIZON_DATA_SOURCE_ID;
+  var NOTION_CRITERIA_DATA_SOURCE_ID = "8a0e9b53-7f52-414f-8bb2-839e636f3044";
+  var NOTION_CRITERIA_VIEW_URL = "view://" + NOTION_CRITERIA_DATA_SOURCE_ID;
+  var NOTION_SCORE_DATA_SOURCE_ID = "6d4c91e1-208e-4373-b617-937943c738e0";
+  var NOTION_SCORE_VIEW_URL = "view://" + NOTION_SCORE_DATA_SOURCE_ID;
 
   function extractPageId(url) {
     var m = /([0-9a-f]{32})(?:\?.*)?$/i.exec(url || "");
@@ -482,6 +563,14 @@
   // ソースが別なので、同期状況が混ざって表示されるのを避けるため)。
   function setHorizonSyncStatus(text, isError) {
     var el = document.getElementById("horizonSyncStatus");
+    el.textContent = text;
+    el.className = "hint" + (isError ? " sync-error" : "");
+  }
+
+  // マトリックス分析(基準・採点、いずれも別データソース)の同期状況も
+  // 選考ボード/視野を広げるとは別のhint要素に出す。
+  function setMatrixSyncStatus(text, isError) {
+    var el = document.getElementById("matrixSyncStatus");
     el.textContent = text;
     el.className = "hint" + (isError ? " sync-error" : "");
   }
@@ -568,6 +657,7 @@
       "内容": item.content,
       "出どころ": item.source || "",
       "メモ": item.memo || "",
+      "気になる度": item.attention,
       "削除済み": "__NO__"
     };
   }
@@ -579,7 +669,8 @@
       notionId: pageId,
       content: row["内容"] || "",
       source: row["出どころ"] || "",
-      memo: row["メモ"] || ""
+      memo: row["メモ"] || "",
+      attention: typeof row["気になる度"] === "number" ? row["気になる度"] : null
     };
   }
 
@@ -616,6 +707,100 @@
     if (!item.notionId) return;
     notionUpdatePage(item.notionId, { "削除済み": "__YES__" }).catch(function (err) {
       reportHorizonSyncFailure("「" + item.content + "」", "削除の同期", err);
+    });
+  }
+
+  // ---------- マトリックス分析(Notion I/O) ----------
+  function reportMatrixSyncFailure(subject, action, err) {
+    setMatrixSyncStatus(subject + "の" + action + "に失敗しました(" + (err && err.code) + ")", true);
+  }
+
+  // 基準は12件登録済みの既存データを読み込むのみで、新規作成のUIは持たない。
+  // アプリからは「重み」だけを編集して書き戻す。
+  function notionRowToCriterion(row) {
+    var pageId = extractPageId(row.url);
+    return {
+      id: pageId,
+      notionId: pageId,
+      name: row["基準"] || "",
+      weight: typeof row["重み"] === "number" ? row["重み"] : null,
+      category: row["区分"] || "",
+      description: row["説明"] || "",
+      order: typeof row["並び順"] === "number" ? row["並び順"] : 0
+    };
+  }
+
+  function notionLoadCriteria() {
+    return queryAllViewRows(NOTION_CRITERIA_VIEW_URL).then(function (rows) {
+      return filterActiveRows(rows).map(notionRowToCriterion).sort(function (a, b) {
+        return a.order - b.order;
+      });
+    });
+  }
+
+  function notionUpdateCriterionWeight(criterion) {
+    if (!criterion.notionId) return;
+    notionUpdatePage(criterion.notionId, { "重み": criterion.weight }).catch(function (err) {
+      reportMatrixSyncFailure("「" + criterion.name + "」", "重みの更新の同期", err);
+    });
+  }
+
+  function scoreTitle(candidate, criterionName) {
+    return candidate + " / " + criterionName;
+  }
+
+  function scoreToNotionProps(s) {
+    return {
+      "候補と基準": scoreTitle(s.candidate, s.criterion),
+      "候補": s.candidate,
+      "基準": s.criterion,
+      "重要度": s.importance,
+      "根拠メモ": s.rationale || "",
+      "削除済み": "__NO__"
+    };
+  }
+
+  function notionRowToScore(row) {
+    var pageId = extractPageId(row.url);
+    return {
+      id: pageId,
+      notionId: pageId,
+      candidate: row["候補"] || "",
+      criterion: row["基準"] || "",
+      importance: typeof row["重要度"] === "number" ? row["重要度"] : 0,
+      rationale: row["根拠メモ"] || ""
+    };
+  }
+
+  function notionLoadScores() {
+    return queryAllViewRows(NOTION_SCORE_VIEW_URL).then(function (rows) {
+      return filterActiveRows(rows).map(notionRowToScore);
+    });
+  }
+
+  function notionCreateScore(score) {
+    notionCreatePage(NOTION_SCORE_DATA_SOURCE_ID, scoreToNotionProps(score)).then(function (res) {
+      var id = firstCreatedPageId(res);
+      if (id) {
+        score.id = id;
+        score.notionId = id;
+      }
+    }).catch(function (err) {
+      reportMatrixSyncFailure(scoreTitle(score.candidate, score.criterion), "追加", err);
+    });
+  }
+
+  function notionUpdateScore(score, changedProps) {
+    if (!score.notionId) return;
+    notionUpdatePage(score.notionId, changedProps).catch(function (err) {
+      reportMatrixSyncFailure(scoreTitle(score.candidate, score.criterion), "更新の同期", err);
+    });
+  }
+
+  function notionSoftDeleteScore(score) {
+    if (!score.notionId) return;
+    notionUpdatePage(score.notionId, { "削除済み": "__YES__" }).catch(function (err) {
+      reportMatrixSyncFailure(scoreTitle(score.candidate, score.criterion), "削除の同期", err);
     });
   }
 
@@ -967,8 +1152,8 @@
   // ---------- 視野を広げる(UI) ----------
   var nextHorizonId = 1;
 
-  // 複数件まとめて追加してから1回だけ再描画する(自由記述欄での複数行
-  // 貼り付けに対応するため)。1件だけ追加したい場合はaddHorizonItem()を使う。
+  // 複数件まとめて追加してから1回だけ再描画する(徳目アテンション等、複数の
+  // 呼び出し元から使う)。1件だけ追加したい場合はaddHorizonItem()を使う。
   function addHorizonItems(entries) {
     entries.forEach(function (entry) {
       var item = {
@@ -976,7 +1161,8 @@
         notionId: null,
         content: entry.content,
         source: entry.source || "",
-        memo: ""
+        memo: "",
+        attention: null
       };
       state.horizonItems.push(item);
       if (NOTION_ENABLED) notionCreateHorizonItem(item);
@@ -997,6 +1183,11 @@
   function updateHorizonItemMemo(item, newMemo) {
     item.memo = newMemo;
     if (NOTION_ENABLED) notionUpdateHorizonItem(item, { "メモ": item.memo });
+  }
+
+  function updateHorizonItemAttention(item, newAttention) {
+    item.attention = newAttention;
+    if (NOTION_ENABLED) notionUpdateHorizonItem(item, { "気になる度": item.attention });
   }
 
   function deleteHorizonItem(item) {
@@ -1037,6 +1228,26 @@
 
     row.appendChild(head);
 
+    var sub = document.createElement("div");
+    sub.className = "horizon-item-sub";
+
+    var attentionLabel = document.createElement("label");
+    attentionLabel.className = "horizon-attention-label";
+    attentionLabel.textContent = "気になる度";
+    var attentionInput = document.createElement("input");
+    attentionInput.type = "number";
+    attentionInput.min = "1";
+    attentionInput.max = "5";
+    attentionInput.className = "horizon-attention-input";
+    attentionInput.placeholder = "-";
+    if (item.attention != null) attentionInput.value = item.attention;
+    attentionInput.addEventListener("change", function () {
+      var v = attentionInput.value === "" ? null : parseInt(attentionInput.value, 10);
+      updateHorizonItemAttention(item, isNaN(v) ? null : v);
+    });
+    attentionLabel.appendChild(attentionInput);
+    sub.appendChild(attentionLabel);
+
     var memoInput = document.createElement("input");
     memoInput.type = "text";
     memoInput.className = "horizon-memo-input";
@@ -1045,7 +1256,9 @@
     memoInput.addEventListener("change", function () {
       updateHorizonItemMemo(item, memoInput.value);
     });
-    row.appendChild(memoInput);
+    sub.appendChild(memoInput);
+
+    row.appendChild(sub);
 
     return row;
   }
@@ -1145,38 +1358,48 @@
     });
   }
 
+  // 出どころのNotion側は「自由記述,自由,達成,焦点,明確,多様,仲間,貢献,
+  // ブロック外し」の固定selectのため、徳目クエスチョンの回答は対応する
+  // 徳目名で登録する(徳目アテンション経由の追加と同じ出どころに集約される)。
   function renderVirtueQuestions() {
     var wrap = document.getElementById("virtueQuestionList");
     wrap.innerHTML = "";
     VIRTUE_QUESTIONS.forEach(function (q, idx) {
-      var source = "徳目質問" + (idx + 1) + "(" + q.virtue + ")";
       var block = document.createElement("div");
       block.className = "horizon-qa-block";
       var qText = document.createElement("p");
       qText.className = "horizon-question";
       qText.textContent = q.text;
       block.appendChild(qText);
-      block.appendChild(buildQuickAddRow("思いついたことを書く", source, "qadd-vq-" + idx));
-      block.appendChild(buildHorizonMiniList(source));
+      block.appendChild(buildQuickAddRow("思いついたことを書く", q.virtue, "qadd-vq-" + idx));
+      block.appendChild(buildHorizonMiniList(q.virtue));
       wrap.appendChild(block);
     });
   }
 
+  // ブロックを外す質問はすべて出どころ「ブロック外し」の1種類に集約される
+  // ため、質問ごとに個別の一覧は出さず、パネル末尾に1つだけ共有の一覧を表示する。
   function renderBlockQuestions() {
     var wrap = document.getElementById("blockQuestionList");
     wrap.innerHTML = "";
     BLOCK_QUESTIONS.forEach(function (q, idx) {
-      var source = "ブロック質問" + (idx + 1);
       var block = document.createElement("div");
       block.className = "horizon-qa-block";
       var qText = document.createElement("p");
       qText.className = "horizon-question";
       qText.textContent = q;
       block.appendChild(qText);
-      block.appendChild(buildQuickAddRow("思いついたことを書く", source, "qadd-bq-" + idx));
-      block.appendChild(buildHorizonMiniList(source));
+      block.appendChild(buildQuickAddRow("思いついたことを書く", "ブロック外し", "qadd-bq-" + idx));
       wrap.appendChild(block);
     });
+    var sharedList = document.createElement("div");
+    sharedList.className = "horizon-block-shared-list";
+    var listLabel = document.createElement("p");
+    listLabel.className = "hint";
+    listLabel.textContent = "これまでに追加した項目(出どころ「ブロック外し」)";
+    sharedList.appendChild(listLabel);
+    sharedList.appendChild(buildHorizonMiniList("ブロック外し"));
+    wrap.appendChild(sharedList);
   }
 
   function renderHorizonAll() {
@@ -1184,6 +1407,313 @@
     renderVirtueAttention();
     renderVirtueQuestions();
     renderBlockQuestions();
+  }
+
+  // ---------- マトリックス分析(UI) ----------
+  // 候補(候補者/選択肢)はcriteria/scoresとは別のデータソースを持たない。
+  // 実データはscores側の「候補」プロパティ値の集合として存在し、まだ1件も
+  // 採点していない候補だけをpendingCandidatesとしてローカルに保持する。
+  var nextMatrixId = 1;
+  var matrixMobileSelectedCandidate = null;
+
+  function allCandidateNames() {
+    var names = [];
+    state.scores.forEach(function (s) {
+      if (names.indexOf(s.candidate) === -1) names.push(s.candidate);
+    });
+    state.pendingCandidates.forEach(function (n) {
+      if (names.indexOf(n) === -1) names.push(n);
+    });
+    return names;
+  }
+
+  function findScore(candidate, criterionName) {
+    return state.scores.filter(function (s) {
+      return s.candidate === candidate && s.criterion === criterionName;
+    })[0] || null;
+  }
+
+  function effectiveWeight(criterion) {
+    return typeof criterion.weight === "number" && criterion.weight > 0 ? criterion.weight : 1;
+  }
+
+  function computeTotal(candidate) {
+    return state.criteria.reduce(function (sum, c) {
+      var s = findScore(candidate, c.name);
+      var importance = s ? (s.importance || 0) : 0;
+      return sum + effectiveWeight(c) * importance;
+    }, 0);
+  }
+
+  // 採点セルを1件でも入力した時点でその候補は「実データあり」になるため、
+  // pendingCandidatesからは外す(scores側の候補名だけを唯一の情報源にする)。
+  function upsertScore(candidate, criterionName, patch) {
+    var existing = findScore(candidate, criterionName);
+    if (existing) {
+      Object.keys(patch).forEach(function (k) { existing[k] = patch[k]; });
+      if (NOTION_ENABLED) {
+        var props = {};
+        if ("importance" in patch) props["重要度"] = existing.importance;
+        if ("rationale" in patch) props["根拠メモ"] = existing.rationale;
+        notionUpdateScore(existing, props);
+      }
+      return existing;
+    }
+    var s = {
+      id: "temp-" + (nextMatrixId++), notionId: null,
+      candidate: candidate, criterion: criterionName,
+      importance: 0, rationale: ""
+    };
+    Object.keys(patch).forEach(function (k) { s[k] = patch[k]; });
+    state.scores.push(s);
+    state.pendingCandidates = state.pendingCandidates.filter(function (n) { return n !== candidate; });
+    if (NOTION_ENABLED) notionCreateScore(s);
+    return s;
+  }
+
+  function addCandidate(name) {
+    name = (name || "").trim();
+    if (!name || allCandidateNames().indexOf(name) !== -1) return;
+    state.pendingCandidates.push(name);
+    renderMatrixAll();
+  }
+
+  function removeCandidate(name) {
+    if (!window.confirm("「" + name + "」の採点データを削除しますか?")) return;
+    state.pendingCandidates = state.pendingCandidates.filter(function (n) { return n !== name; });
+    var toRemove = state.scores.filter(function (s) { return s.candidate === name; });
+    state.scores = state.scores.filter(function (s) { return s.candidate !== name; });
+    if (matrixMobileSelectedCandidate === name) matrixMobileSelectedCandidate = null;
+    renderMatrixAll();
+    if (NOTION_ENABLED) toRemove.forEach(notionSoftDeleteScore);
+  }
+
+  function updateCriterionWeight(criterion, weight) {
+    criterion.weight = weight;
+    renderMatrixAll();
+    if (NOTION_ENABLED) notionUpdateCriterionWeight(criterion);
+  }
+
+  function buildImportanceInput(candidate, criterionName) {
+    var input = document.createElement("input");
+    input.type = "number";
+    input.min = "0";
+    input.max = "5";
+    input.className = "matrix-importance-input";
+    var existing = findScore(candidate, criterionName);
+    if (existing && existing.importance) input.value = existing.importance;
+    input.addEventListener("change", function () {
+      var v = parseInt(input.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      if (v > 5) v = 5;
+      upsertScore(candidate, criterionName, { importance: v });
+      renderMatrixAll();
+    });
+    return input;
+  }
+
+  // 根拠メモの変更は合計点や候補一覧に影響しないため、他の入力と違って
+  // 変更のたびの全体再描画はしない(入力中にフォーカスが外れるのを避ける)。
+  function buildRationaleInput(candidate, criterionName, className) {
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = className;
+    input.placeholder = "根拠(任意)";
+    var existing = findScore(candidate, criterionName);
+    if (existing && existing.rationale) input.value = existing.rationale;
+    input.addEventListener("change", function () {
+      upsertScore(candidate, criterionName, { rationale: input.value });
+    });
+    return input;
+  }
+
+  function renderMatrixDesktop() {
+    var table = document.getElementById("matrixTable");
+    table.innerHTML = "";
+    if (!state.criteria.length) return;
+    var candidates = allCandidateNames();
+
+    var thead = document.createElement("thead");
+    var headRow = document.createElement("tr");
+    var cornerTh = document.createElement("th");
+    cornerTh.className = "matrix-criterion-col";
+    cornerTh.textContent = "基準(重み)";
+    headRow.appendChild(cornerTh);
+    candidates.forEach(function (name) {
+      var th = document.createElement("th");
+      var headWrap = document.createElement("div");
+      headWrap.className = "matrix-candidate-head";
+      var nameSpan = document.createElement("span");
+      nameSpan.textContent = name;
+      var rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "matrix-candidate-rm";
+      rmBtn.textContent = "削除";
+      rmBtn.addEventListener("click", function () { removeCandidate(name); });
+      headWrap.appendChild(nameSpan);
+      headWrap.appendChild(rmBtn);
+      th.appendChild(headWrap);
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    state.criteria.forEach(function (criterion) {
+      var tr = document.createElement("tr");
+      var criterionTd = document.createElement("td");
+      criterionTd.className = "matrix-criterion-cell";
+      var nameEl = document.createElement("div");
+      nameEl.className = "matrix-criterion-name";
+      nameEl.textContent = criterion.name;
+      criterionTd.appendChild(nameEl);
+      if (criterion.category || criterion.description) {
+        var subEl = document.createElement("div");
+        subEl.className = "matrix-criterion-sub";
+        subEl.textContent = [criterion.category, criterion.description].filter(Boolean).join(" ・ ");
+        criterionTd.appendChild(subEl);
+      }
+      var weightRow = document.createElement("div");
+      weightRow.className = "matrix-weight-row";
+      var weightLabel = document.createElement("span");
+      weightLabel.textContent = "重み";
+      var weightInput = document.createElement("input");
+      weightInput.type = "number";
+      weightInput.min = "1";
+      weightInput.max = "3";
+      weightInput.className = "matrix-weight-input";
+      if (criterion.weight != null) weightInput.value = criterion.weight;
+      weightInput.addEventListener("change", function () {
+        var v = weightInput.value === "" ? null : parseInt(weightInput.value, 10);
+        if (v != null) {
+          if (v < 1) v = 1;
+          if (v > 3) v = 3;
+        }
+        updateCriterionWeight(criterion, v);
+      });
+      weightRow.appendChild(weightLabel);
+      weightRow.appendChild(weightInput);
+      criterionTd.appendChild(weightRow);
+      tr.appendChild(criterionTd);
+
+      candidates.forEach(function (name) {
+        var td = document.createElement("td");
+        td.appendChild(buildImportanceInput(name, criterion.name));
+        td.appendChild(buildRationaleInput(name, criterion.name, "matrix-rationale-input"));
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    if (candidates.length) {
+      var tfoot = document.createElement("tfoot");
+      var totalRow = document.createElement("tr");
+      totalRow.className = "matrix-total-row";
+      var totalLabelTd = document.createElement("td");
+      totalLabelTd.textContent = "合計点";
+      totalRow.appendChild(totalLabelTd);
+      var totals = candidates.map(computeTotal);
+      var maxTotal = Math.max.apply(null, totals);
+      candidates.forEach(function (name, idx) {
+        var td = document.createElement("td");
+        td.className = "matrix-total-cell";
+        if (maxTotal > 0 && totals[idx] === maxTotal) td.classList.add("matrix-best");
+        td.textContent = totals[idx] + "点";
+        totalRow.appendChild(td);
+      });
+      tfoot.appendChild(totalRow);
+      table.appendChild(tfoot);
+    }
+  }
+
+  function renderMatrixMobile() {
+    var select = document.getElementById("matrixMobileCandidateSelect");
+    var body = document.getElementById("matrixMobileBody");
+    var candidates = allCandidateNames();
+
+    select.innerHTML = "";
+    if (!candidates.length) {
+      var opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "候補がまだありません";
+      select.appendChild(opt);
+      select.disabled = true;
+      body.innerHTML = "";
+      var empty = document.createElement("p");
+      empty.className = "matrix-empty";
+      empty.textContent = "上で候補を追加してください。";
+      body.appendChild(empty);
+      return;
+    }
+    select.disabled = false;
+    if (!matrixMobileSelectedCandidate || candidates.indexOf(matrixMobileSelectedCandidate) === -1) {
+      matrixMobileSelectedCandidate = candidates[0];
+    }
+    candidates.forEach(function (name) {
+      var o = document.createElement("option");
+      o.value = name;
+      o.textContent = name;
+      if (name === matrixMobileSelectedCandidate) o.selected = true;
+      select.appendChild(o);
+    });
+    select.onchange = function () {
+      matrixMobileSelectedCandidate = select.value;
+      renderMatrixMobile();
+    };
+
+    body.innerHTML = "";
+    var totalEl = document.createElement("div");
+    totalEl.className = "matrix-mobile-total";
+    totalEl.textContent = matrixMobileSelectedCandidate + "の合計点: " + computeTotal(matrixMobileSelectedCandidate) + "点";
+    body.appendChild(totalEl);
+
+    state.criteria.forEach(function (criterion) {
+      var row = document.createElement("div");
+      row.className = "matrix-mobile-row";
+
+      var head = document.createElement("div");
+      head.className = "matrix-mobile-row-head";
+      var left = document.createElement("div");
+      left.className = "matrix-mobile-criterion";
+      var nameEl = document.createElement("span");
+      nameEl.className = "matrix-criterion-name";
+      nameEl.textContent = criterion.name;
+      var subEl = document.createElement("div");
+      subEl.className = "matrix-criterion-sub";
+      subEl.textContent = "重み" + effectiveWeight(criterion) + (criterion.category ? " ・ " + criterion.category : "");
+      left.appendChild(nameEl);
+      left.appendChild(subEl);
+      head.appendChild(left);
+      head.appendChild(buildImportanceInput(matrixMobileSelectedCandidate, criterion.name));
+      row.appendChild(head);
+      row.appendChild(buildRationaleInput(matrixMobileSelectedCandidate, criterion.name, "matrix-rationale-input-mobile"));
+
+      body.appendChild(row);
+    });
+  }
+
+  function renderMatrixImportSelect() {
+    var select = document.getElementById("matrixImportCandidateSelect");
+    var existing = allCandidateNames();
+    select.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "イニシャルリストから選ぶ…";
+    select.appendChild(placeholder);
+    state.horizonItems.forEach(function (item) {
+      if (existing.indexOf(item.content) !== -1) return;
+      var o = document.createElement("option");
+      o.value = item.content;
+      o.textContent = item.content;
+      select.appendChild(o);
+    });
+  }
+
+  function renderMatrixAll() {
+    renderMatrixDesktop();
+    renderMatrixMobile();
+    renderMatrixImportSelect();
   }
 
   // ---------- Init ----------
@@ -1208,6 +1738,7 @@
     function switchTab(tab) {
       document.getElementById("boardSection").style.display = tab === "board" ? "" : "none";
       document.getElementById("horizonSection").style.display = tab === "horizon" ? "" : "none";
+      document.getElementById("matrixSection").style.display = tab === "matrix" ? "" : "none";
       Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
         btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
       });
@@ -1216,20 +1747,43 @@
       btn.addEventListener("click", function () { switchTab(btn.getAttribute("data-tab")); });
     });
 
-    // ---------- イニシャルリスト(自由記述の複数行追加) ----------
-    function addHorizonFreeFromTextarea() {
-      var textarea = document.getElementById("horizonFreeInput");
-      var lines = textarea.value.split("\n").map(function (l) { return l.trim(); }).filter(function (l) { return l; });
-      if (!lines.length) return;
-      addHorizonItems(lines.map(function (l) { return { content: l, source: "自由記述" }; }));
-      textarea.value = "";
-      textarea.focus();
+    // ---------- イニシャルリスト(自由記述を1行入力してEnterで追加) ----------
+    function addHorizonFreeFromInput() {
+      var input = document.getElementById("horizonFreeInput");
+      var v = input.value.trim();
+      if (!v) return;
+      addHorizonItem(v, "自由記述");
+      input.value = "";
+      input.focus();
     }
-    document.getElementById("addHorizonFreeBtn").addEventListener("click", addHorizonFreeFromTextarea);
+    document.getElementById("addHorizonFreeBtn").addEventListener("click", addHorizonFreeFromInput);
+    document.getElementById("horizonFreeInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") addHorizonFreeFromInput();
+    });
 
-    // 選考ボードとは別データソースのため、読み込みは選考ボードと独立させる
-    // (「視野を広げる」のデータソースIDが未設定でも選考ボードの同期には
-    // 影響しないようにするため)。
+    // ---------- マトリックス分析(候補の追加) ----------
+    function addMatrixCandidateFromInput() {
+      var input = document.getElementById("matrixCandidateInput");
+      var v = input.value.trim();
+      if (!v) return;
+      addCandidate(v);
+      input.value = "";
+      input.focus();
+    }
+    document.getElementById("addMatrixCandidateBtn").addEventListener("click", addMatrixCandidateFromInput);
+    document.getElementById("matrixCandidateInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") addMatrixCandidateFromInput();
+    });
+    document.getElementById("matrixImportCandidateSelect").addEventListener("change", function () {
+      var select = document.getElementById("matrixImportCandidateSelect");
+      if (!select.value) return;
+      addCandidate(select.value);
+      select.value = "";
+    });
+
+    // 選考ボード/視野を広げる/マトリックス分析はそれぞれ別データソースのため、
+    // 読み込みは独立させる(1つのデータソースIDが未設定・不正でも、他の
+    // タブの同期には影響しないようにするため)。
     if (NOTION_ENABLED) {
       setSyncStatus("Notionから読み込んでいます…");
       notionLoadJobs().then(function (jobs) {
@@ -1245,16 +1799,30 @@
       notionLoadHorizonItems().then(function (items) {
         state.horizonItems = items;
         renderHorizonAll();
+        renderMatrixImportSelect();
         setHorizonSyncStatus("Notionと同期中(他の端末からも同じデータが見えます)");
       }).catch(function (err) {
         setHorizonSyncStatus("Notionからの読み込みに失敗しました(" + (err && err.code) + ")。データソースIDが未設定の可能性があります。", true);
         renderHorizonAll();
       });
+
+      setMatrixSyncStatus("Notionから読み込んでいます…");
+      Promise.all([notionLoadCriteria(), notionLoadScores()]).then(function (results) {
+        state.criteria = results[0];
+        state.scores = results[1];
+        renderMatrixAll();
+        setMatrixSyncStatus("Notionと同期中(他の端末からも同じデータが見えます)");
+      }).catch(function (err) {
+        setMatrixSyncStatus("Notionからの読み込みに失敗しました(" + (err && err.code) + ")。データソースIDが未設定の可能性があります。", true);
+        renderMatrixAll();
+      });
     } else {
       setSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
       setHorizonSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
+      setMatrixSyncStatus("ローカルモードです(このページを閉じるとデータは消えます)");
       renderAll();
       renderHorizonAll();
+      renderMatrixAll();
     }
   }
 
