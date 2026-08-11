@@ -453,13 +453,16 @@
         if (tool === "notion-query-database-view") {
           var queryDataSourceId = VIEW_TO_DATA_SOURCE[input.view_url];
           var queryBody = { dataSourceId: queryDataSourceId, page_size: input.page_size };
-          if (input.start_cursor) queryBody.start_cursor = input.start_cursor;
+          if (input.start_cursor) queryBody.startCursor = input.start_cursor;
           return bridgeFetch("/query", queryBody).then(function (raw) {
             var results = raw.results || [];
             results.forEach(function (row) {
               if (row && row.id) pageDataSourceMap[normalizeId(row.id)] = queryDataSourceId;
             });
-            return { payload: raw };
+            // Workerの生レスポンスはcamelCase(hasMore/nextCursor)だが、本来の
+            // window.claude.mcp.callToolはsnake_case(has_more/next_cursor)を返すため、
+            // アプリ本体(queryAllViewRows)が期待する形に変換してから返す。
+            return { payload: { results: results, has_more: raw.hasMore, next_cursor: raw.nextCursor } };
           });
         }
         if (tool === "notion-create-pages") {
