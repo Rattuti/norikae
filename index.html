@@ -90,6 +90,14 @@
   }
   .virtue-block:last-child, .horizon-qa-block:last-child { margin-bottom: 0; }
   .virtue-block summary { cursor: pointer; font-weight: 700; font-size: 0.92rem; }
+  .virtue-attention-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; align-items: start;
+  }
+  .virtue-attention-grid .virtue-block { margin-bottom: 0; padding: 8px 10px; }
+  @media (min-width: 640px) {
+    .virtue-attention-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .virtue-attention-grid .virtue-block { padding: 10px 14px; }
+  }
   .horizon-question { font-weight: 600; font-size: 0.88rem; margin: 0; }
 
   .horizon-mini-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
@@ -266,7 +274,7 @@
     <div class="panel">
       <h2>徳目アテンション</h2>
       <p class="hint" style="margin-bottom: 10px;">7つの徳目それぞれの定義を確認しながら、その観点で思いついた職種をイニシャルリストに追加できます。</p>
-      <div id="virtueAttentionList"></div>
+      <div id="virtueAttentionList" class="virtue-attention-grid"></div>
     </div>
 
     <div class="panel">
