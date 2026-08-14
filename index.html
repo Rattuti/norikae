@@ -108,8 +108,10 @@
     border: 1px solid var(--border); padding: 8px 10px; text-align: center; white-space: nowrap;
   }
   .matrix-table th { background: var(--bg); font-weight: 700; }
+  .matrix-table th:first-child, .matrix-table td:first-child { position: sticky; left: 0; z-index: 1; }
+  .matrix-table th:first-child { z-index: 2; }
   .matrix-criterion-col { text-align: left; min-width: 180px; }
-  .matrix-criterion-cell { text-align: left; }
+  .matrix-criterion-cell { text-align: left; background: var(--panel); }
   .matrix-criterion-name { font-weight: 600; }
   .matrix-criterion-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
   .matrix-weight-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
@@ -1569,6 +1571,25 @@
     table.appendChild(thead);
 
     var tbody = document.createElement("tbody");
+
+    if (candidates.length) {
+      var totalRow = document.createElement("tr");
+      totalRow.className = "matrix-total-row";
+      var totalLabelTd = document.createElement("td");
+      totalLabelTd.textContent = "合計点";
+      totalRow.appendChild(totalLabelTd);
+      var totals = candidates.map(computeTotal);
+      var maxTotal = Math.max.apply(null, totals);
+      candidates.forEach(function (name, idx) {
+        var td = document.createElement("td");
+        td.className = "matrix-total-cell";
+        if (maxTotal > 0 && totals[idx] === maxTotal) td.classList.add("matrix-best");
+        td.textContent = totals[idx] + "点";
+        totalRow.appendChild(td);
+      });
+      tbody.appendChild(totalRow);
+    }
+
     state.criteria.forEach(function (criterion) {
       var tr = document.createElement("tr");
       var criterionTd = document.createElement("td");
@@ -1615,26 +1636,6 @@
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
-
-    if (candidates.length) {
-      var tfoot = document.createElement("tfoot");
-      var totalRow = document.createElement("tr");
-      totalRow.className = "matrix-total-row";
-      var totalLabelTd = document.createElement("td");
-      totalLabelTd.textContent = "合計点";
-      totalRow.appendChild(totalLabelTd);
-      var totals = candidates.map(computeTotal);
-      var maxTotal = Math.max.apply(null, totals);
-      candidates.forEach(function (name, idx) {
-        var td = document.createElement("td");
-        td.className = "matrix-total-cell";
-        if (maxTotal > 0 && totals[idx] === maxTotal) td.classList.add("matrix-best");
-        td.textContent = totals[idx] + "点";
-        totalRow.appendChild(td);
-      });
-      tfoot.appendChild(totalRow);
-      table.appendChild(tfoot);
-    }
   }
 
   function renderMatrixMobile() {
