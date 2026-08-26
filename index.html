@@ -1049,6 +1049,23 @@
     });
     container.appendChild(links);
 
+    var cantApplyBtn = document.createElement("button");
+    cantApplyBtn.type = "button";
+    cantApplyBtn.className = "delete-job-btn";
+    cantApplyBtn.textContent = "応募できなかった(削除)";
+    cantApplyBtn.addEventListener("click", function () {
+      job.stage = "応募不可";
+      state.jobs = state.jobs.filter(function (j) { return j !== job; });
+      renderAll();
+      setSyncStatus("「" + job.company + "」を応募不可として削除しました");
+      if (job.notionId && NOTION_ENABLED) {
+        notionUpdatePage(job.notionId, { "ステージ": "応募不可", "削除済み": "__YES__" }).catch(function (err) {
+          reportSyncFailure("「" + job.company + "」", "削除の同期", err);
+        });
+      }
+    });
+    container.appendChild(cantApplyBtn);
+
     var deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "delete-job-btn";
