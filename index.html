@@ -202,6 +202,7 @@
   .job-desire { font-size: 0.78rem; color: var(--accent-dark); white-space: nowrap; letter-spacing: 1px; }
   .job-card-sub { display: flex; gap: 8px; margin-top: 6px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
   .industry-tag { background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
+  .job-tag-badge { font-size: 0.68rem; color: var(--danger); border: 1px solid var(--danger); border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
   .expand-btn { display: block; background: none; border: none; color: var(--accent); font-size: 0.76rem; padding: 6px 0 0; cursor: pointer; }
   .expand-btn:hover { text-decoration: underline; }
 
@@ -562,7 +563,8 @@
       "勤務地": job.location || "",
       "志望度": job.desire || 3,
       "メモ": job.memo || "",
-      "削除済み": "__NO__"
+      "削除済み": "__NO__",
+      "タグ": job.tags || []
     };
     if (job.appliedDate) props["date:応募日:start"] = job.appliedDate;
     if (job.deadline) props["date:期限:start"] = job.deadline;
@@ -586,6 +588,7 @@
       location: row["勤務地"] || "",
       desire: typeof row["志望度"] === "number" ? row["志望度"] : 3,
       memo: row["メモ"] || "",
+      tags: Array.isArray(row["タグ"]) ? row["タグ"] : [],
       expanded: false
     };
   }
@@ -1085,6 +1088,20 @@
     memoInput.addEventListener("change", onFieldChange("memo", "メモ"));
     container.appendChild(labeledField("メモ", memoInput));
 
+    var tagCheckbox = document.createElement("input");
+    tagCheckbox.type = "checkbox";
+    tagCheckbox.checked = (job.tags || []).indexOf("応募終了") !== -1;
+    tagCheckbox.addEventListener("change", function () {
+      var tags = (job.tags || []).slice();
+      var idx = tags.indexOf("応募終了");
+      if (this.checked && idx === -1) tags.push("応募終了");
+      else if (!this.checked && idx !== -1) tags.splice(idx, 1);
+      job.tags = tags;
+      renderAll();
+      if (NOTION_ENABLED) notionUpdateJob(job, { "タグ": tags });
+    });
+    container.appendChild(labeledField("応募終了", tagCheckbox));
+
     var links = document.createElement("div");
     links.className = "research-links";
     buildResearchLinks(job.company).forEach(function (link) {
@@ -1145,6 +1162,12 @@
     desireEl.textContent = "★".repeat(job.desire) + "☆".repeat(Math.max(0, 5 - job.desire));
     head.appendChild(companyEl);
     head.appendChild(stageBadge);
+    (job.tags || []).forEach(function (tag) {
+      var tagEl = document.createElement("span");
+      tagEl.className = "job-tag-badge";
+      tagEl.textContent = tag;
+      head.appendChild(tagEl);
+    });
     head.appendChild(desireEl);
     card.appendChild(head);
 
