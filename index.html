@@ -165,6 +165,11 @@
   .urgency-overdue .na-deadline { color: var(--danger); font-weight: 700; }
   .urgency-soon .na-deadline { color: var(--warn); font-weight: 700; }
   .na-empty { color: var(--muted); text-align: center; padding: 20px 0; font-size: 0.9rem; }
+  .na-done-btn {
+    font-size: 0.72rem; padding: 3px 10px; min-height: auto;
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+  }
+  .na-done-btn:hover { background: var(--bg); color: var(--text); }
 
   /* ---------- 選考ボード(路線図風カンバン) ---------- */
   .board-columns { display: flex; gap: 0; overflow-x: auto; padding: 8px 2px 4px; }
@@ -335,6 +340,18 @@
     { name: "見送り", color: "#8f8f8f" }
   ];
   var STAGE_OPTIONS = STAGE_META.map(function (s) { return s.name; });
+  // ステージが変わった時、次のアクションが未入力か「前のステージの提案文のまま」
+  // (=自分で書き換えていない)場合にだけ、新しいステージの提案文で上書きする。
+  // 自分で自由記述した内容は上書きしない。
+  var SUGGESTED_NEXT_ACTION = {
+    "気になる": "応募するか検討する",
+    "応募済": "結果を待つ",
+    "書類通過": "面接日程を調整する",
+    "一次": "面接対策をする",
+    "二次": "面接対策をする",
+    "最終": "最終面接の準備をする",
+    "内定": "条件を確認し返事をする"
+  };
   var INDUSTRY_OPTIONS = ["製造", "建設", "不動産", "IT", "その他"];
 
   // ---------- 視野を広げる(データ) ----------
@@ -895,6 +912,20 @@
         act.className = "na-action";
         act.textContent = job.nextAction;
         row.appendChild(act);
+
+        var doneBtn = document.createElement("button");
+        doneBtn.type = "button";
+        doneBtn.className = "na-done-btn";
+        doneBtn.textContent = "完了";
+        doneBtn.title = "このアクションを完了として消す";
+        doneBtn.addEventListener("click", function (j) {
+          return function () {
+            j.nextAction = "";
+            renderNextActions();
+            if (NOTION_ENABLED) notionUpdateJob(j, { "次のアクション": "" });
+          };
+        }(job));
+        row.appendChild(doneBtn);
       }
       if (job.deadline) {
         var dl = document.createElement("div");
@@ -952,7 +983,24 @@
       if (opt === job.stage) o.selected = true;
       stageSelect.appendChild(o);
     });
-    stageSelect.addEventListener("change", onFieldChange("stage", "ステージ", null, true));
+    stageSelect.addEventListener("change", function () {
+      var oldStage = job.stage;
+      var newStage = this.value;
+      job.stage = newStage;
+      var oldSuggestion = SUGGESTED_NEXT_ACTION[oldStage];
+      var newSuggestion = SUGGESTED_NEXT_ACTION[newStage];
+      var nextActionChanged = false;
+      if (newSuggestion && (!job.nextAction || job.nextAction === oldSuggestion)) {
+        job.nextAction = newSuggestion;
+        nextActionChanged = true;
+      }
+      renderAll();
+      if (NOTION_ENABLED) {
+        var props = { "ステージ": newStage };
+        if (nextActionChanged) props["次のアクション"] = job.nextAction;
+        notionUpdateJob(job, props);
+      }
+    });
     container.appendChild(labeledField("ステージ", stageSelect));
 
     var industrySelect = document.createElement("select");
