@@ -257,7 +257,7 @@
     <div class="panel">
       <h2>選考ボード</h2>
       <div class="row" style="margin-bottom: 14px;">
-        <input type="text" id="companyInput" placeholder="企業名を入力してEnter">
+        <input type="text" id="companyInput" placeholder="企業名を入力してEnter" aria-label="企業名">
         <button id="addJobBtn">追加</button>
       </div>
       <div class="board-columns" id="boardColumns"></div>
@@ -271,7 +271,7 @@
       <h2>イニシャルリスト</h2>
       <p class="hint" style="margin-bottom: 10px;">仕事の選択肢を自由に書き出す欄です。評価や絞り込みはせず、思いついたものを気軽に足してください。下のセクションから追加した項目もここに集まります。</p>
       <div class="row">
-        <input type="text" id="horizonFreeInput" placeholder="例: 地方移住して林業(入力してEnter)" style="flex:1; min-width:220px;">
+        <input type="text" id="horizonFreeInput" placeholder="例: 地方移住して林業(入力してEnter)" style="flex:1; min-width:220px;" aria-label="仕事の選択肢">
         <button type="button" id="addHorizonFreeBtn">追加</button>
       </div>
       <div class="horizon-list" id="horizonList" style="margin-top: 14px;"></div>
@@ -303,9 +303,9 @@
       <h2>マトリックス分析</h2>
       <p class="hint" style="margin-bottom: 10px;">基準ごとの重み × 各候補の重要度から合計点を自動計算します。重みが未設定の基準は1として扱います。</p>
       <div class="row" style="margin-bottom: 14px;">
-        <input type="text" id="matrixCandidateInput" placeholder="候補名を入力してEnter">
+        <input type="text" id="matrixCandidateInput" placeholder="候補名を入力してEnter" aria-label="候補名">
         <button type="button" id="addMatrixCandidateBtn">候補を追加</button>
-        <select id="matrixImportCandidateSelect">
+        <select id="matrixImportCandidateSelect" aria-label="イニシャルリストから候補を追加">
           <option value="">イニシャルリストから選ぶ…</option>
         </select>
       </div>
@@ -924,7 +924,10 @@
         doneBtn.addEventListener("click", function (j) {
           return function () {
             j.nextAction = "";
-            renderNextActions();
+            // 選考ボード側でこの企業のカードを展開表示している場合、その
+            // 「次のアクション」欄も古い値のまま残ってしまうため、この
+            // パネル単体ではなくrenderAll()で全体を再描画して同期させる。
+            renderAll();
             if (NOTION_ENABLED) notionUpdateJob(j, { "次のアクション": "" });
           };
         }(job));
@@ -1314,6 +1317,7 @@
     var contentInput = document.createElement("input");
     contentInput.type = "text";
     contentInput.className = "horizon-content-input";
+    contentInput.setAttribute("aria-label", "内容");
     contentInput.value = item.content;
     contentInput.addEventListener("change", function () {
       var v = contentInput.value.trim();
@@ -1360,6 +1364,7 @@
     memoInput.type = "text";
     memoInput.className = "horizon-memo-input";
     memoInput.placeholder = "メモ(任意)";
+    memoInput.setAttribute("aria-label", "メモ");
     memoInput.value = item.memo || "";
     memoInput.addEventListener("change", function () {
       updateHorizonItemMemo(item, memoInput.value);
@@ -1420,6 +1425,7 @@
     input.type = "text";
     input.id = inputId;
     input.placeholder = placeholderText;
+    input.setAttribute("aria-label", placeholderText);
     input.style.flex = "1";
     var btn = document.createElement("button");
     btn.type = "button";

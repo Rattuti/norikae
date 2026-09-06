@@ -168,7 +168,14 @@ function main() {
     return;
   }
 
-  const text = fs.readFileSync(csvPath, "utf8");
+  let text;
+  try {
+    text = fs.readFileSync(csvPath, "utf8");
+  } catch (err) {
+    console.error(`CSVファイルの読み込みに失敗しました: ${csvPath}(${err.message})`);
+    process.exitCode = 1;
+    return;
+  }
   const rows = parseCsv(text);
   console.log(`CSV総行数: ${rows.length}(先頭9行はヘッダー等としてスキップ)`);
 

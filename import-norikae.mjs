@@ -84,7 +84,14 @@ async function main() {
     return;
   }
 
-  const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  let payload;
+  try {
+    payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (err) {
+    console.error(`payload.jsonの読み込みに失敗しました: ${filePath}(${err.message})`);
+    process.exitCode = 1;
+    return;
+  }
   const jobs = Array.isArray(payload.jobs) ? payload.jobs : [];
   const scores = Array.isArray(payload.scores) ? payload.scores : [];
 
