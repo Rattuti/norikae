@@ -1072,11 +1072,14 @@
     locationInput.addEventListener("change", onFieldChange("location", "勤務地"));
     container.appendChild(labeledField("勤務地", locationInput));
 
-    var desireInput = document.createElement("input");
-    desireInput.type = "number";
-    desireInput.min = "1";
-    desireInput.max = "5";
-    desireInput.value = job.desire;
+    var desireInput = document.createElement("select");
+    ["1", "2", "3", "4", "5"].forEach(function (n) {
+      var opt = document.createElement("option");
+      opt.value = n;
+      opt.textContent = n;
+      desireInput.appendChild(opt);
+    });
+    desireInput.value = String(job.desire || 1);
     desireInput.addEventListener("change", onFieldChange("desire", "志望度", function (v) {
       var n = parseInt(v, 10);
       if (!n || n < 1) n = 1;
@@ -1218,7 +1221,10 @@
       col.className = "board-col";
       col.style.setProperty("--line-color", meta.color);
 
-      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; });
+      // Notionのビューは登録が古い順で返るため、逆順にして新しく登録・
+      // 更新された求人ほど上に来るようにする(古い求人=募集終了済みのことが
+      // 多く、それが上に来て見づらいという指摘への対応)。
+      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; }).reverse();
 
       var head = document.createElement("div");
       head.className = "station-head";
