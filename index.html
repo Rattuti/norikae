@@ -420,7 +420,8 @@
       location: "",
       desire: 3,
       memo: "",
-      expanded: false
+      expanded: false,
+      createdTime: new Date().toISOString()
     };
   }
 
@@ -589,7 +590,8 @@
       desire: typeof row["志望度"] === "number" ? row["志望度"] : 3,
       memo: row["メモ"] || "",
       tags: Array.isArray(row["タグ"]) ? row["タグ"] : [],
-      expanded: false
+      expanded: false,
+      createdTime: row.createdTime || null
     };
   }
 
@@ -1221,10 +1223,16 @@
       col.className = "board-col";
       col.style.setProperty("--line-color", meta.color);
 
-      // Notionのビューは登録が古い順で返るため、逆順にして新しく登録・
-      // 更新された求人ほど上に来るようにする(古い求人=募集終了済みのことが
-      // 多く、それが上に来て見づらいという指摘への対応)。
-      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; }).reverse();
+      // 登録日時(createdTime)の新しい順に並べる。以前はNotionのビューが
+      // 常に登録の古い順で返る前提で単純に.reverse()していたが、ビューの
+      // 並び順はその前提が崩れると効かなくなるため、明示的にcreatedTimeで
+      // ソートする(古い求人=募集終了済みのことが多く、それが上に来て
+      // 見づらいという指摘への対応)。
+      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; }).sort(function (a, b) {
+        var ta = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+        var tb = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+        return tb - ta;
+      });
 
       var head = document.createElement("div");
       head.className = "station-head";
