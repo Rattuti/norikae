@@ -1147,6 +1147,7 @@
       if (!window.confirm("「" + job.company + "」を削除しますか?")) return;
       state.jobs = state.jobs.filter(function (j) { return j !== job; });
       renderAll();
+      setSyncStatus("「" + job.company + "」を削除しました");
       if (NOTION_ENABLED) notionSoftDeleteJob(job);
     });
     container.appendChild(deleteBtn);
@@ -1665,10 +1666,12 @@
     var headRow = document.createElement("tr");
     var cornerTh = document.createElement("th");
     cornerTh.className = "matrix-criterion-col";
+    cornerTh.scope = "col";
     cornerTh.textContent = "基準(重み)";
     headRow.appendChild(cornerTh);
     candidates.forEach(function (name) {
       var th = document.createElement("th");
+      th.scope = "col";
       var headWrap = document.createElement("div");
       headWrap.className = "matrix-candidate-head";
       var nameSpan = document.createElement("span");
