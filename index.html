@@ -1199,6 +1199,7 @@
     toggleBtn.type = "button";
     toggleBtn.className = "expand-btn";
     toggleBtn.textContent = job.expanded ? "▾ 閉じる" : "▸ 詳細を編集";
+    toggleBtn.setAttribute("aria-expanded", job.expanded ? "true" : "false");
     card.appendChild(toggleBtn);
 
     var detail = document.createElement("div");
@@ -1211,6 +1212,7 @@
       job.expanded = !job.expanded;
       detail.style.display = job.expanded ? "flex" : "none";
       toggleBtn.textContent = job.expanded ? "▾ 閉じる" : "▸ 詳細を編集";
+      toggleBtn.setAttribute("aria-expanded", job.expanded ? "true" : "false");
     });
 
     return card;
@@ -1317,6 +1319,7 @@
   }
 
   function deleteHorizonItem(item) {
+    if (!window.confirm("「" + item.content + "」を削除しますか?")) return;
     state.horizonItems = state.horizonItems.filter(function (i) { return i !== item; });
     renderHorizonAll();
     if (NOTION_ENABLED) notionSoftDeleteHorizonItem(item);
