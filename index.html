@@ -118,8 +118,8 @@
   .matrix-table th { background: var(--bg); font-weight: 700; }
   .matrix-table th:first-child, .matrix-table td:first-child { position: sticky; left: 0; z-index: 1; }
   .matrix-table th:first-child { z-index: 2; }
-  .matrix-criterion-col { text-align: left; min-width: 180px; }
-  .matrix-criterion-cell { text-align: left; background: var(--panel); }
+  .matrix-table .matrix-criterion-col { text-align: left; min-width: 180px; }
+  .matrix-table .matrix-criterion-cell { text-align: left; background: var(--panel); font-weight: normal; }
   .matrix-criterion-name { font-weight: 600; }
   .matrix-criterion-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
   .matrix-weight-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
@@ -1697,7 +1697,8 @@
     if (candidates.length) {
       var totalRow = document.createElement("tr");
       totalRow.className = "matrix-total-row";
-      var totalLabelTd = document.createElement("td");
+      var totalLabelTd = document.createElement("th");
+      totalLabelTd.scope = "row";
       totalLabelTd.textContent = "合計点";
       totalRow.appendChild(totalLabelTd);
       var totals = candidates.map(computeTotal);
@@ -1714,7 +1715,8 @@
 
     state.criteria.forEach(function (criterion) {
       var tr = document.createElement("tr");
-      var criterionTd = document.createElement("td");
+      var criterionTd = document.createElement("th");
+      criterionTd.scope = "row";
       criterionTd.className = "matrix-criterion-cell";
       var nameEl = document.createElement("div");
       nameEl.className = "matrix-criterion-name";
@@ -1735,6 +1737,7 @@
       weightInput.min = "1";
       weightInput.max = "3";
       weightInput.className = "matrix-weight-input";
+      weightInput.setAttribute("aria-label", "重み(" + criterion.name + ")");
       if (criterion.weight != null) weightInput.value = criterion.weight;
       weightInput.addEventListener("change", function () {
         var v = weightInput.value === "" ? null : parseInt(weightInput.value, 10);
