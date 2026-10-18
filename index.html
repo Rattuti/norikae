@@ -15,6 +15,10 @@
     --accent-dark: #284d78;
     --danger: #b3475a;
     --warn: #c68a2e;
+    /* --warnをそのまま文字色に使うと背景(.urgency-soon等の淡色)との
+       コントラストがWCAG AA(4.5:1)未達(実測2.65:1)になるため、文字用に
+       同系色でより濃い値を別途用意する。背景・ボーダー用の--warnは変更しない。 */
+    --warn-text: #95610f;
   }
   * { box-sizing: border-box; }
   body {
@@ -163,7 +167,7 @@
   .na-action { font-size: 0.82rem; color: var(--text); flex: 2 1 220px; }
   .na-deadline { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
   .urgency-overdue .na-deadline { color: var(--danger); font-weight: 700; }
-  .urgency-soon .na-deadline { color: var(--warn); font-weight: 700; }
+  .urgency-soon .na-deadline { color: var(--warn-text); font-weight: 700; }
   .na-empty { color: var(--muted); text-align: center; padding: 20px 0; font-size: 0.9rem; }
   .na-done-btn {
     font-size: 0.72rem; padding: 3px 10px; min-height: auto;
@@ -1353,6 +1357,7 @@
     rmBtn.type = "button";
     rmBtn.className = "delete-horizon-btn";
     rmBtn.textContent = "削除";
+    rmBtn.setAttribute("aria-label", "「" + item.content + "」を削除");
     rmBtn.addEventListener("click", function () { deleteHorizonItem(item); });
     head.appendChild(rmBtn);
 
@@ -1424,6 +1429,7 @@
       rm.type = "button";
       rm.className = "rm";
       rm.textContent = "削除";
+      rm.setAttribute("aria-label", "「" + item.content + "」を削除");
       rm.addEventListener("click", function () { deleteHorizonItem(item); });
       row.appendChild(span);
       row.appendChild(rm);
@@ -1632,6 +1638,7 @@
     input.min = "0";
     input.max = "5";
     input.className = "matrix-importance-input";
+    input.setAttribute("aria-label", "重要度(" + criterionName + " ・ " + candidate + ")");
     var existing = findScore(candidate, criterionName);
     if (existing && existing.importance) input.value = existing.importance;
     input.addEventListener("change", function () {
@@ -1651,6 +1658,7 @@
     input.type = "text";
     input.className = className;
     input.placeholder = "根拠(任意)";
+    input.setAttribute("aria-label", "根拠メモ(" + criterionName + " ・ " + candidate + ")");
     var existing = findScore(candidate, criterionName);
     if (existing && existing.rationale) input.value = existing.rationale;
     input.addEventListener("change", function () {
@@ -1683,6 +1691,7 @@
       rmBtn.type = "button";
       rmBtn.className = "matrix-candidate-rm";
       rmBtn.textContent = "削除";
+      rmBtn.setAttribute("aria-label", "「" + name + "」を削除");
       rmBtn.addEventListener("click", function () { removeCandidate(name); });
       headWrap.appendChild(nameSpan);
       headWrap.appendChild(rmBtn);
