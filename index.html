@@ -1131,7 +1131,6 @@
     cantApplyBtn.className = "delete-job-btn";
     cantApplyBtn.textContent = "応募できなかった(削除)";
     cantApplyBtn.addEventListener("click", function () {
-      job.stage = "応募不可";
       state.jobs = state.jobs.filter(function (j) { return j !== job; });
       renderAll();
       setSyncStatus("「" + job.company + "」を応募不可として削除しました");
@@ -1670,7 +1669,18 @@
   function renderMatrixDesktop() {
     var table = document.getElementById("matrixTable");
     table.innerHTML = "";
-    if (!state.criteria.length) return;
+    if (!state.criteria.length) {
+      var emptyTbody = document.createElement("tbody");
+      var emptyTr = document.createElement("tr");
+      var emptyTd = document.createElement("td");
+      emptyTd.className = "matrix-empty";
+      emptyTd.style.border = "none";
+      emptyTd.textContent = "採点基準を読み込めませんでした。上の同期状況を確認してください。";
+      emptyTr.appendChild(emptyTd);
+      emptyTbody.appendChild(emptyTr);
+      table.appendChild(emptyTbody);
+      return;
+    }
     var candidates = allCandidateNames();
 
     var thead = document.createElement("thead");
