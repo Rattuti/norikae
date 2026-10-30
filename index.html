@@ -459,11 +459,18 @@
         return (id || "").replace(/-/g, "");
       }
 
+      // プライベートウィンドウやサイトデータのブロック時はlocalStorageへのアクセス自体が
+      // 例外を投げる。bridgeFetchのPromiseの外で投げられると呼び出し側の.catchで拾えず
+      // 同期処理全体が止まるため、読み書きは失敗しても続行できるようにする。
+      function storageGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+      function storageSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+      function storageRemove(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
       function getAppKey() {
-        var key = localStorage.getItem(APP_KEY_STORAGE);
+        var key = storageGet(APP_KEY_STORAGE);
         if (!key) {
           key = window.prompt("Notion連携用のアプリキーを入力してください");
-          if (key) localStorage.setItem(APP_KEY_STORAGE, key);
+          if (key) storageSet(APP_KEY_STORAGE, key);
         }
         return key;
       }
@@ -476,7 +483,7 @@
           body: JSON.stringify(body)
         }).then(function (res) {
           if (res.status === 401) {
-            localStorage.removeItem(APP_KEY_STORAGE);
+            storageRemove(APP_KEY_STORAGE);
             return Promise.reject({ code: "unauthorized", message: "アプリキーが正しくありません" });
           }
           if (!res.ok) {
