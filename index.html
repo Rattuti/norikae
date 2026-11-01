@@ -1138,6 +1138,7 @@
     cantApplyBtn.className = "delete-job-btn";
     cantApplyBtn.textContent = "応募できなかった(削除)";
     cantApplyBtn.addEventListener("click", function () {
+      if (!window.confirm("「" + job.company + "」を応募不可として削除しますか?")) return;
       state.jobs = state.jobs.filter(function (j) { return j !== job; });
       renderAll();
       setSyncStatus("「" + job.company + "」を応募不可として削除しました");
