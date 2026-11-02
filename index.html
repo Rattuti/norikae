@@ -205,6 +205,7 @@
   .job-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .job-company { font-weight: 700; font-size: 0.92rem; }
   .job-stage-badge { display: none; font-size: 0.68rem; color: #fff; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .job-desire-empty { color: var(--muted); font-size: 0.72rem; letter-spacing: 0; }
   .job-desire { font-size: 0.78rem; color: var(--accent-dark); white-space: nowrap; letter-spacing: 1px; }
   .job-card-sub { display: flex; gap: 8px; margin-top: 6px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
   .industry-tag { background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px; }
@@ -425,7 +426,7 @@
       jobUrl: "",
       salaryRange: "",
       location: "",
-      desire: 3,
+      desire: null,
       memo: "",
       expanded: false,
       createdTime: new Date().toISOString()
@@ -577,7 +578,7 @@
       "求人URL": job.jobUrl || "",
       "年収レンジ": job.salaryRange || "",
       "勤務地": job.location || "",
-      "志望度": job.desire || 3,
+      "志望度": job.desire || null,
       "メモ": job.memo || "",
       "削除済み": "__NO__",
       "タグ": job.tags || []
@@ -603,7 +604,7 @@
       jobUrl: row["求人URL"] || "",
       salaryRange: row["年収レンジ"] || "",
       location: row["勤務地"] || "",
-      desire: typeof row["志望度"] === "number" ? row["志望度"] : 3,
+      desire: typeof row["志望度"] === "number" ? row["志望度"] : null,
       memo: row["メモ"] || "",
       tags: Array.isArray(row["タグ"]) ? row["タグ"] : [],
       expanded: false,
@@ -1128,16 +1129,17 @@
     container.appendChild(labeledField("勤務地", locationInput));
 
     var desireInput = document.createElement("select");
-    ["1", "2", "3", "4", "5"].forEach(function (n) {
+    ["", "1", "2", "3", "4", "5"].forEach(function (n) {
       var opt = document.createElement("option");
       opt.value = n;
-      opt.textContent = n;
+      opt.textContent = n || "入力なし";
       desireInput.appendChild(opt);
     });
-    desireInput.value = String(job.desire || 1);
+    desireInput.value = job.desire ? String(job.desire) : "";
     desireInput.addEventListener("change", onFieldChange("desire", "志望度", function (v) {
+      if (!v) return null;
       var n = parseInt(v, 10);
-      if (!n || n < 1) n = 1;
+      if (n < 1) n = 1;
       if (n > 5) n = 5;
       return n;
     }, true));
@@ -1221,7 +1223,8 @@
     stageBadge.textContent = job.stage;
     var desireEl = document.createElement("span");
     desireEl.className = "job-desire";
-    desireEl.textContent = "★".repeat(job.desire) + "☆".repeat(Math.max(0, 5 - job.desire));
+    desireEl.textContent = job.desire ? "★".repeat(job.desire) + "☆".repeat(Math.max(0, 5 - job.desire)) : "志望度 入力なし";
+    if (!job.desire) desireEl.className += " job-desire-empty";
     head.appendChild(companyEl);
     head.appendChild(stageBadge);
     (job.tags || []).forEach(function (tag) {
