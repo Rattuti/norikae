@@ -205,6 +205,8 @@
   .job-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .job-company { font-weight: 700; font-size: 0.92rem; }
   .job-stage-badge { display: none; font-size: 0.68rem; color: #fff; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .board-filter { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
+  .job-focus-badge { padding: 1px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; color: #fff; background: var(--accent-dark); }
   .job-desire-empty { color: var(--muted); font-size: 0.72rem; letter-spacing: 0; }
   .job-desire { font-size: 0.78rem; color: var(--accent-dark); white-space: nowrap; letter-spacing: 1px; }
   .job-card-sub { display: flex; gap: 8px; margin-top: 6px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
@@ -267,6 +269,7 @@
         <input type="text" id="companyInput" placeholder="企業名を入力してEnter" aria-label="企業名">
         <button id="addJobBtn">追加</button>
       </div>
+      <label class="board-filter"><input type="checkbox" id="showArchivedToggle"><span id="showArchivedLabel">見送りと過去の記録も表示</span></label>
       <div class="board-columns" id="boardColumns"></div>
     </div>
   </div>
@@ -410,6 +413,24 @@
   // 外れ、scores側の候補名として実質的に永続化される。
   var state = { jobs: [], horizonItems: [], criteria: [], scores: [], pendingCandidates: [] };
   var nextId = 1;
+  var showArchived = false;
+  // この日以前に作られ、応募日が空の行は以前の転職活動の記録(本人確認済み、2026-10-30)
+  var PAST_RECORD_LAST_DATE = "2026-08-31";
+
+  function isPastRecord(job) {
+    if (job.stage === "気になる" || job.appliedDate || !job.createdTime) return false;
+    return job.createdTime.slice(0, 10) <= PAST_RECORD_LAST_DATE;
+  }
+
+  function isArchivedJob(job) {
+    if (job.stage === "見送り" || isPastRecord(job)) return true;
+    return job.stage === "気になる" && (job.tags || []).indexOf("応募終了") !== -1;
+  }
+
+  // 次のアクションと期限を入れるのは重点の企業だけ、という運用に合わせて判定する
+  function isFocusJob(job) {
+    return job.stage === "気になる" && !!job.nextAction && !!job.deadline;
+  }
 
   function createJob(name) {
     return {
@@ -1227,6 +1248,12 @@
     if (!job.desire) desireEl.className += " job-desire-empty";
     head.appendChild(companyEl);
     head.appendChild(stageBadge);
+    if (isFocusJob(job)) {
+      var focusEl = document.createElement("span");
+      focusEl.className = "job-focus-badge";
+      focusEl.textContent = "重点";
+      head.appendChild(focusEl);
+    }
     (job.tags || []).forEach(function (tag) {
       var tagEl = document.createElement("span");
       tagEl.className = "job-tag-badge";
@@ -1277,7 +1304,11 @@
   function renderBoard() {
     var wrap = document.getElementById("boardColumns");
     wrap.innerHTML = "";
-    STAGE_META.forEach(function (meta) {
+    var archivedCount = state.jobs.filter(isArchivedJob).length;
+    document.getElementById("showArchivedLabel").textContent = "見送りと過去の記録も表示(" + archivedCount + "件)";
+    var visibleJobs = showArchived ? state.jobs : state.jobs.filter(function (j) { return !isArchivedJob(j); });
+    var visibleStages = showArchived ? STAGE_META : STAGE_META.filter(function (s) { return s.name !== "見送り"; });
+    visibleStages.forEach(function (meta) {
       var col = document.createElement("div");
       col.className = "board-col";
       col.style.setProperty("--line-color", meta.color);
@@ -1287,7 +1318,9 @@
       // 並び順はその前提が崩れると効かなくなるため、明示的にcreatedTimeで
       // ソートする(古い求人=募集終了済みのことが多く、それが上に来て
       // 見づらいという指摘への対応)。
-      var jobsInStage = state.jobs.filter(function (j) { return j.stage === meta.name; }).sort(function (a, b) {
+      var jobsInStage = visibleJobs.filter(function (j) { return j.stage === meta.name; }).sort(function (a, b) {
+        var focusDiff = (isFocusJob(b) ? 1 : 0) - (isFocusJob(a) ? 1 : 0);
+        if (focusDiff) return focusDiff;
         var ta = a.createdTime ? new Date(a.createdTime).getTime() : 0;
         var tb = b.createdTime ? new Date(b.createdTime).getTime() : 0;
         return tb - ta;
@@ -1926,6 +1959,11 @@
 
   // ---------- Init ----------
   function init() {
+    document.getElementById("showArchivedToggle").addEventListener("change", function () {
+      showArchived = this.checked;
+      renderBoard();
+    });
+
     function addJobFromInput() {
       var input = document.getElementById("companyInput");
       var name = input.value.trim();
