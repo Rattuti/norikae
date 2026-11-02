@@ -166,6 +166,8 @@
   .na-stage-badge { font-size: 0.68rem; color: #fff; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
   .na-action { font-size: 0.82rem; color: var(--text); flex: 2 1 220px; }
   .na-deadline { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .na-done-when { flex-basis: 100%; font-size: 0.78rem; color: var(--muted); }
+  .na-job-link { font-size: 0.78rem; font-weight: 600; color: var(--accent-dark); white-space: nowrap; }
   .urgency-overdue .na-deadline { color: var(--danger); font-weight: 700; }
   .urgency-soon .na-deadline { color: var(--warn-text); font-weight: 700; }
   .na-empty { color: var(--muted); text-align: center; padding: 20px 0; font-size: 0.9rem; }
@@ -418,6 +420,7 @@
       industry: "",
       appliedDate: "",
       nextAction: "",
+      doneWhen: "",
       deadline: "",
       jobUrl: "",
       salaryRange: "",
@@ -570,6 +573,7 @@
       "ステージ": job.stage || STAGE_OPTIONS[0],
       "業界": job.industry || "",
       "次のアクション": job.nextAction || "",
+      "完了条件": job.doneWhen || "",
       "求人URL": job.jobUrl || "",
       "年収レンジ": job.salaryRange || "",
       "勤務地": job.location || "",
@@ -594,6 +598,7 @@
       industry: row["業界"] || "",
       appliedDate: row["date:応募日:start"] || "",
       nextAction: row["次のアクション"] || "",
+      doneWhen: row["完了条件"] || "",
       deadline: row["date:期限:start"] || "",
       jobUrl: row["求人URL"] || "",
       salaryRange: row["年収レンジ"] || "",
@@ -872,6 +877,16 @@
   }
 
   // ---------- 次のアクション ----------
+  function todayLocalStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+
+  // notion-bridgeは日付のstartがnullの時だけ値を消す。空文字のまま送ると消えない
+  function notionDateValue(value) {
+    return value ? value : null;
+  }
+
   function daysUntil(dateStr) {
     var today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -937,14 +952,31 @@
         doneBtn.addEventListener("click", function (j) {
           return function () {
             j.nextAction = "";
+            j.doneWhen = "";
+            j.deadline = "";
             // 選考ボード側でこの企業のカードを展開表示している場合、その
             // 「次のアクション」欄も古い値のまま残ってしまうため、この
             // パネル単体ではなくrenderAll()で全体を再描画して同期させる。
             renderAll();
-            if (NOTION_ENABLED) notionUpdateJob(j, { "次のアクション": "" });
+            if (NOTION_ENABLED) notionUpdateJob(j, { "次のアクション": "", "完了条件": "", "date:期限:start": null });
           };
         }(job));
         row.appendChild(doneBtn);
+      }
+      if (job.doneWhen) {
+        var doneWhen = document.createElement("div");
+        doneWhen.className = "na-done-when";
+        doneWhen.textContent = "完了条件: " + job.doneWhen;
+        row.appendChild(doneWhen);
+      }
+      if (job.jobUrl) {
+        var jobLink = document.createElement("a");
+        jobLink.className = "na-job-link";
+        jobLink.href = job.jobUrl;
+        jobLink.target = "_blank";
+        jobLink.rel = "noopener noreferrer";
+        jobLink.textContent = "求人ページを開く ↗";
+        row.appendChild(jobLink);
       }
       if (job.deadline) {
         var dl = document.createElement("div");
@@ -976,7 +1008,7 @@
         else renderNextActions();
         if (NOTION_ENABLED) {
           var props = {};
-          props[notionKey] = value;
+          props[notionKey] = notionKey.indexOf("date:") === 0 ? notionDateValue(value) : value;
           notionUpdateJob(job, props);
         }
       };
@@ -1013,10 +1045,13 @@
         job.nextAction = newSuggestion;
         nextActionChanged = true;
       }
+      var appliedDateSet = newStage === "応募済" && !job.appliedDate;
+      if (appliedDateSet) job.appliedDate = todayLocalStr();
       renderAll();
       if (NOTION_ENABLED) {
         var props = { "ステージ": newStage };
         if (nextActionChanged) props["次のアクション"] = job.nextAction;
+        if (appliedDateSet) props["date:応募日:start"] = job.appliedDate;
         notionUpdateJob(job, props);
       }
     });
@@ -1049,6 +1084,13 @@
     nextActionInput.value = job.nextAction;
     nextActionInput.addEventListener("change", onFieldChange("nextAction", "次のアクション"));
     container.appendChild(labeledField("次のアクション", nextActionInput));
+
+    var doneWhenInput = document.createElement("input");
+    doneWhenInput.type = "text";
+    doneWhenInput.value = job.doneWhen;
+    doneWhenInput.placeholder = "例: 応募フォーム送信完了";
+    doneWhenInput.addEventListener("change", onFieldChange("doneWhen", "完了条件"));
+    container.appendChild(labeledField("完了条件", doneWhenInput));
 
     var deadlineInput = document.createElement("input");
     deadlineInput.type = "date";
