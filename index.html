@@ -928,7 +928,7 @@
     var wrap = document.getElementById("nextActionsList");
     wrap.innerHTML = "";
     var targets = state.jobs.filter(function (j) {
-      return j.stage !== "見送り" && (j.nextAction || j.deadline);
+      return j.stage !== "見送り" && !isPastRecord(j) && (j.nextAction || j.deadline);
     });
     targets.sort(function (a, b) {
       var ad = a.deadline ? new Date(a.deadline + "T00:00:00").getTime() : Infinity;
@@ -1471,6 +1471,10 @@
     if (item.attention != null) attentionInput.value = item.attention;
     attentionInput.addEventListener("change", function () {
       var v = attentionInput.value === "" ? null : parseInt(attentionInput.value, 10);
+      if (v != null && !isNaN(v)) {
+        if (v < 1) v = 1;
+        if (v > 5) v = 5;
+      }
       updateHorizonItemAttention(item, isNaN(v) ? null : v);
     });
     attentionLabel.appendChild(attentionInput);
