@@ -259,13 +259,13 @@
     <p class="hint" id="syncStatus"></p>
   </div>
 
-  <div class="tab-row" id="tabRow">
-    <button type="button" class="tab-btn active" data-tab="board">選考ボード</button>
-    <button type="button" class="tab-btn" data-tab="horizon">視野を広げる</button>
-    <button type="button" class="tab-btn" data-tab="matrix">マトリックス分析</button>
+  <div class="tab-row" id="tabRow" role="tablist">
+    <button type="button" id="tabBtnBoard" class="tab-btn active" data-tab="board" role="tab" aria-selected="true" aria-controls="boardSection">選考ボード</button>
+    <button type="button" id="tabBtnHorizon" class="tab-btn" data-tab="horizon" role="tab" aria-selected="false" aria-controls="horizonSection">視野を広げる</button>
+    <button type="button" id="tabBtnMatrix" class="tab-btn" data-tab="matrix" role="tab" aria-selected="false" aria-controls="matrixSection">マトリックス分析</button>
   </div>
 
-  <div class="tab-section" id="boardSection">
+  <div class="tab-section" id="boardSection" role="tabpanel" aria-labelledby="tabBtnBoard">
     <div class="panel">
       <h2>次のアクション</h2>
       <div class="na-list" id="nextActionsList"></div>
@@ -282,7 +282,7 @@
     </div>
   </div>
 
-  <div class="tab-section" id="horizonSection" style="display:none;">
+  <div class="tab-section" id="horizonSection" style="display:none;" role="tabpanel" aria-labelledby="tabBtnHorizon">
     <p class="hint" id="horizonSyncStatus"></p>
 
     <div class="panel">
@@ -314,7 +314,7 @@
     </div>
   </div>
 
-  <div class="tab-section" id="matrixSection" style="display:none;">
+  <div class="tab-section" id="matrixSection" style="display:none;" role="tabpanel" aria-labelledby="tabBtnMatrix">
     <p class="hint" id="matrixSyncStatus"></p>
 
     <div class="panel">
@@ -1112,7 +1112,11 @@
     var nextActionInput = document.createElement("input");
     nextActionInput.type = "text";
     nextActionInput.value = job.nextAction;
-    nextActionInput.addEventListener("change", onFieldChange("nextAction", "次のアクション"));
+    // 次のアクション・期限の有無でボード上の「重点」バッジ表示が変わるため、
+    // 他の項目(企業名・職種等)と同様にフル再描画(renderAll)にする。
+    // ここをrenderNextActions()のみにすると、カード側のバッジが更新されず
+    // 古い表示のまま残ってしまう(次に別の操作で再描画されるまで気付けない)。
+    nextActionInput.addEventListener("change", onFieldChange("nextAction", "次のアクション", null, true));
     container.appendChild(labeledField("次のアクション", nextActionInput));
 
     var doneWhenInput = document.createElement("input");
@@ -1125,7 +1129,8 @@
     var deadlineInput = document.createElement("input");
     deadlineInput.type = "date";
     deadlineInput.value = job.deadline;
-    deadlineInput.addEventListener("change", onFieldChange("deadline", "date:期限:start"));
+    // nextActionInputと同じ理由でフル再描画にする(「重点」バッジの表示条件)。
+    deadlineInput.addEventListener("change", onFieldChange("deadline", "date:期限:start", null, true));
     container.appendChild(labeledField("期限", deadlineInput));
 
     var urlInput = document.createElement("input");
@@ -1998,7 +2003,9 @@
       document.getElementById("horizonSection").style.display = tab === "horizon" ? "" : "none";
       document.getElementById("matrixSection").style.display = tab === "matrix" ? "" : "none";
       Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
-        btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
+        var isActive = btn.getAttribute("data-tab") === tab;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", isActive ? "true" : "false");
       });
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
